@@ -1,0 +1,67 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --radius: 0.75rem;
+    --brand: #D4890A;
+    --brand-dark: #8B4513;
+  }
+
+  * { box-sizing: border-box; }
+  body { @apply bg-gray-50 text-gray-900; }
+
+  ::-webkit-scrollbar { width: 6px; height: 6px; }
+  ::-webkit-scrollbar-track { @apply bg-gray-100; }
+  ::-webkit-scrollbar-thumb { @apply bg-gray-300 rounded-full; }
+  ::-webkit-scrollbar-thumb:hover { @apply bg-gray-400; }
+}
+
+@layer components {
+  .card-hover {
+    @apply transition-all duration-200 hover:shadow-lg hover:-translate-y-0.5;
+  }
+
+  .btn-brand {
+    @apply bg-brand-500 hover:bg-brand-600 text-white font-medium px-4 py-2 rounded-lg
+           transition-all duration-150 active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed;
+  }
+
+  .tier-badge-bronze {
+    @apply bg-amber-700 text-amber-50 px-2 py-0.5 rounded-full text-xs font-semibold uppercase;
+  }
+  .tier-badge-silver {
+    @apply bg-gray-400 text-gray-900 px-2 py-0.5 rounded-full text-xs font-semibold uppercase;
+  }
+  .tier-badge-gold {
+    @apply bg-yellow-400 text-yellow-900 px-2 py-0.5 rounded-full text-xs font-semibold uppercase;
+  }
+  .tier-badge-platinum {
+    @apply bg-slate-800 text-slate-200 px-2 py-0.5 rounded-full text-xs font-semibold uppercase;
+  }
+
+  .stat-card {
+    @apply bg-white rounded-2xl p-6 shadow-sm border border-gray-100 card-hover;
+  }
+
+  .sidebar-link {
+    @apply flex items-center gap-3 px-4 py-3 rounded-xl text-gray-600 hover:bg-brand-50 hover:text-brand-700
+           transition-colors duration-150 font-medium text-sm;
+  }
+
+  .sidebar-link.active {
+    @apply bg-brand-500 text-white hover:bg-brand-600 hover:text-white;
+  }
+}
+
+@keyframes shimmer {
+  0% { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+
+.skeleton {
+  background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
+  background-size: 200% 100%;
+  animation: shimmer 1.5s infinite;
+}

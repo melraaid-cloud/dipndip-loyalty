@@ -1,0 +1,306 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>dipndip — انضم لبرنامج الولاء</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: 'Segoe UI', Tahoma, Arial, sans-serif;
+    background: #0d0805;
+    color: #f5e6d0;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+  }
+  .logo {
+    font-size: 2.2rem;
+    font-weight: 900;
+    color: #c8860a;
+    margin-bottom: 6px;
+    letter-spacing: 2px;
+  }
+  .tagline {
+    color: #a08060;
+    font-size: 0.9rem;
+    margin-bottom: 32px;
+  }
+  .card {
+    background: #1a1008;
+    border: 1px solid #3a2010;
+    border-radius: 16px;
+    padding: 32px 28px;
+    width: 100%;
+    max-width: 420px;
+    box-shadow: 0 8px 32px rgba(0,0,0,0.5);
+  }
+  .card h2 {
+    font-size: 1.3rem;
+    color: #f5e6d0;
+    margin-bottom: 24px;
+    text-align: center;
+  }
+  .form-row { display: flex; gap: 12px; }
+  .field { margin-bottom: 16px; flex: 1; }
+  label {
+    display: block;
+    font-size: 0.82rem;
+    color: #a08060;
+    margin-bottom: 6px;
+  }
+  input {
+    width: 100%;
+    background: #0d0805;
+    border: 1px solid #3a2010;
+    border-radius: 8px;
+    padding: 11px 14px;
+    color: #f5e6d0;
+    font-size: 0.95rem;
+    font-family: inherit;
+    outline: none;
+    transition: border-color 0.2s;
+  }
+  input:focus { border-color: #c8860a; }
+  input::placeholder { color: #5a4030; }
+  .btn {
+    width: 100%;
+    background: linear-gradient(135deg, #c8860a, #e8a020);
+    color: #0d0805;
+    border: none;
+    border-radius: 10px;
+    padding: 14px;
+    font-size: 1.05rem;
+    font-weight: 700;
+    cursor: pointer;
+    margin-top: 8px;
+    transition: opacity 0.2s, transform 0.1s;
+    font-family: inherit;
+  }
+  .btn:hover { opacity: 0.9; transform: translateY(-1px); }
+  .btn:active { transform: translateY(0); }
+  .btn:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
+  .success-screen {
+    display: none;
+    text-align: center;
+    padding: 20px 0;
+  }
+  .success-icon { font-size: 4rem; margin-bottom: 16px; }
+  .success-screen h3 { font-size: 1.4rem; color: #c8860a; margin-bottom: 8px; }
+  .success-screen p { color: #a08060; font-size: 0.9rem; line-height: 1.6; }
+  .customer-id {
+    background: #0d0805;
+    border: 1px solid #c8860a;
+    border-radius: 8px;
+    padding: 12px 20px;
+    margin: 16px 0;
+    font-size: 1.1rem;
+    font-weight: 700;
+    color: #c8860a;
+    letter-spacing: 2px;
+  }
+  .tier-badge {
+    display: inline-block;
+    background: #c8860a22;
+    border: 1px solid #c8860a55;
+    color: #c8860a;
+    border-radius: 20px;
+    padding: 4px 14px;
+    font-size: 0.85rem;
+    margin-bottom: 16px;
+  }
+  .error-msg {
+    background: #2a0808;
+    border: 1px solid #8b0000;
+    color: #ff6b6b;
+    border-radius: 8px;
+    padding: 10px 14px;
+    font-size: 0.85rem;
+    margin-bottom: 14px;
+    display: none;
+  }
+  .wallet-btns { display: flex; gap: 10px; flex-direction: column; margin-top: 16px; }
+  .wallet-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    padding: 11px;
+    border-radius: 9px;
+    font-size: 0.9rem;
+    font-weight: 600;
+    cursor: pointer;
+    border: none;
+    font-family: inherit;
+    text-decoration: none;
+  }
+  .apple-btn { background: #1c1c1e; color: #fff; border: 1px solid #3a3a3c; }
+  .google-btn { background: #1a73e8; color: #fff; }
+  .footer { text-align: center; margin-top: 20px; color: #5a4030; font-size: 0.78rem; }
+</style>
+</head>
+<body>
+
+<div class="logo">🍫 dipndip</div>
+<div class="tagline">برنامج الولاء — كل زيارة تستحق مكافأة</div>
+
+<div class="card">
+  <h2>سجّل وابدأ تجميع النقاط</h2>
+
+  <div class="error-msg" id="errorMsg"></div>
+
+  <div id="registerForm">
+    <div class="form-row">
+      <div class="field">
+        <label>الاسم الأول *</label>
+        <input type="text" id="firstName" placeholder="محمد" required>
+      </div>
+      <div class="field">
+        <label>الاسم الأخير *</label>
+        <input type="text" id="lastName" placeholder="العربي" required>
+      </div>
+    </div>
+    <div class="field">
+      <label>رقم الهاتف</label>
+      <input type="tel" id="phone" placeholder="0912345678">
+    </div>
+    <div class="field">
+      <label>البريد الإلكتروني</label>
+      <input type="email" id="email" placeholder="example@email.com">
+    </div>
+    <div class="field">
+      <label>تاريخ الميلاد (اختياري)</label>
+      <input type="date" id="birthday">
+    </div>
+    <div class="field">
+      <label>كود الإحالة (إن وجد)</label>
+      <input type="text" id="referralCode" placeholder="DND-XXXXX">
+    </div>
+    <button class="btn" id="submitBtn" onclick="registerCustomer()">انضم الآن 🎉</button>
+  </div>
+
+  <div class="success-screen" id="successScreen">
+    <div class="success-icon">🎉</div>
+    <h3>أهلاً بك في dipndip!</h3>
+    <p>تم تسجيلك بنجاح في برنامج الولاء</p>
+    <div class="customer-id" id="customerId"></div>
+    <div class="tier-badge" id="tierBadge">🥉 Bronze</div>
+    <p style="color:#a08060;font-size:0.85rem">أضف بطاقتك للمحفظة لتتبع نقاطك</p>
+    <div class="wallet-btns">
+      <a class="wallet-btn apple-btn" id="appleWalletBtn" href="#" style="display:none">
+        🍎 أضف إلى Apple Wallet
+      </a>
+      <a class="wallet-btn google-btn" id="googleWalletBtn" href="#" target="_blank" style="display:none">
+        💳 أضف إلى Google Wallet
+      </a>
+    </div>
+  </div>
+</div>
+
+<div class="footer">dipndip Libya &nbsp;·&nbsp; جميع الحقوق محفوظة 2025</div>
+
+<script>
+const API = window.location.origin.replace(':8888','').replace('localhost:8888','localhost') + '/api/v1';
+// When served from NestJS on port 3000, API base is same origin
+const BASE = window.location.port === '8888'
+  ? 'http://localhost:3000/api/v1'
+  : window.location.origin + '/api/v1';
+
+let registeredCustomerId = null;
+
+async function registerCustomer() {
+  const firstName = document.getElementById('firstName').value.trim();
+  const lastName  = document.getElementById('lastName').value.trim();
+  const phone     = document.getElementById('phone').value.trim();
+  const email     = document.getElementById('email').value.trim();
+  const birthday  = document.getElementById('birthday').value;
+  const referralCode = document.getElementById('referralCode').value.trim();
+
+  if (!firstName || !lastName) {
+    showError('الاسم الأول والأخير مطلوبان');
+    return;
+  }
+
+  const btn = document.getElementById('submitBtn');
+  btn.disabled = true;
+  btn.textContent = 'جاري التسجيل...';
+  hideError();
+
+  const body = { firstName, lastName };
+  if (phone)       body.phone = phone;
+  if (email)       body.email = email;
+  if (birthday)    body.birthday = birthday;
+  if (referralCode) body.referralCode = referralCode;
+
+  try {
+    const res = await fetch(BASE + '/customers/self-register', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body),
+    });
+    const data = await res.json();
+
+    if (!res.ok) {
+      const msg = Array.isArray(data.message) ? data.message.join('، ') : (data.message || 'حدث خطأ');
+      showError(msg);
+      btn.disabled = false;
+      btn.textContent = 'انضم الآن 🎉';
+      return;
+    }
+
+    registeredCustomerId = data.id;
+    document.getElementById('customerId').textContent = data.loyaltyId || data.id;
+    const tierMap = { BRONZE:'🥉 برونز', SILVER:'🥈 فضي', GOLD:'🥇 ذهبي', PLATINUM:'💎 بلاتيني' };
+    document.getElementById('tierBadge').textContent = tierMap[data.tier] || data.tier || '🥉 برونز';
+
+    document.getElementById('registerForm').style.display = 'none';
+    document.getElementById('successScreen').style.display = 'block';
+
+    // Load wallet passes
+    loadWalletPasses(data.id);
+  } catch (e) {
+    showError('تعذّر الاتصال بالخادم، تأكد من الاتصال بالإنترنت');
+    btn.disabled = false;
+    btn.textContent = 'انضم الآن 🎉';
+  }
+}
+
+async function loadWalletPasses(customerId) {
+  try {
+    const [appleRes, googleRes] = await Promise.allSettled([
+      fetch(BASE + '/wallet/apple/' + customerId + '/pass'),
+      fetch(BASE + '/wallet/google/' + customerId + '/save-url'),
+    ]);
+
+    if (appleRes.status === 'fulfilled' && appleRes.value.ok) {
+      const blob = await appleRes.value.blob();
+      const url = URL.createObjectURL(blob);
+      const btn = document.getElementById('appleWalletBtn');
+      btn.href = url;
+      btn.download = 'dipndip.pkpass';
+      btn.style.display = 'flex';
+    }
+
+    if (googleRes.status === 'fulfilled' && googleRes.value.ok) {
+      const data = await googleRes.value.json();
+      const btn = document.getElementById('googleWalletBtn');
+      btn.href = data.saveUrl || data.url || '#';
+      btn.style.display = 'flex';
+    }
+  } catch(e) {}
+}
+
+function showError(msg) {
+  const el = document.getElementById('errorMsg');
+  el.textContent = msg;
+  el.style.display = 'block';
+}
+function hideError() {
+  document.getElementById('errorMsg').style.display = 'none';
+}
+</script>
+</body>
+</html>

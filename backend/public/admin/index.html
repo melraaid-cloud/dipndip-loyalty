@@ -1,0 +1,729 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="theme-color" content="#0d0805">
+<title>dipndip — لوحة الإدارة</title>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#0d0805;--bg2:#1a1008;--bg3:#261508;--bg4:#0f0906;
+  --border:#3a2010;--border2:#5a3018;
+  --gold:#c8860a;--gold2:#e8a020;
+  --text:#f5e6d0;--text2:#c4a882;--text3:#8a6040;--text4:#5a4030;
+  --ok:#10b981;--err:#f43f5e;--warn:#f59e0b;--info:#3b82f6;
+  --sidebar:240px;
+}
+html,body{height:100%;background:var(--bg);color:var(--text);font-family:'Segoe UI',Tahoma,Arial,sans-serif;-webkit-font-smoothing:antialiased;overflow:hidden}
+
+/* ── Layout ── */
+#app{display:flex;height:100vh}
+.sidebar{
+  width:var(--sidebar);min-width:var(--sidebar);
+  background:var(--bg2);border-left:1px solid var(--border);
+  display:flex;flex-direction:column;overflow:hidden}
+.main{flex:1;display:flex;flex-direction:column;overflow:hidden}
+.topbar{
+  background:var(--bg2);border-bottom:1px solid var(--border);
+  padding:14px 20px;display:flex;align-items:center;justify-content:space-between;
+  flex-shrink:0}
+.content{flex:1;overflow-y:auto;padding:20px}
+
+/* ── Sidebar ── */
+.sidebar-logo{
+  padding:20px 16px 16px;border-bottom:1px solid var(--border);
+  font-size:1.1rem;font-weight:900;color:var(--gold);letter-spacing:2px}
+.sidebar-logo span{font-size:0.72rem;color:var(--text4);display:block;margin-top:2px;font-weight:400;letter-spacing:0}
+.nav{padding:12px 8px;flex:1;overflow-y:auto}
+.nav-item{
+  display:flex;align-items:center;gap:10px;padding:10px 12px;
+  border-radius:9px;cursor:pointer;color:var(--text3);font-size:0.88rem;
+  margin-bottom:2px;transition:background .15s,color .15s;user-select:none}
+.nav-item:hover{background:var(--bg3);color:var(--text)}
+.nav-item.active{background:rgba(200,134,10,.14);color:var(--gold);font-weight:600}
+.nav-icon{font-size:1.1rem;min-width:22px;text-align:center}
+.sidebar-footer{padding:12px 16px;border-top:1px solid var(--border);font-size:0.75rem;color:var(--text4)}
+
+/* ── Topbar ── */
+.topbar-title{font-size:1rem;font-weight:700;color:var(--text)}
+.topbar-right{display:flex;align-items:center;gap:10px}
+.staff-badge{
+  background:rgba(200,134,10,.12);border:1px solid rgba(200,134,10,.3);
+  color:var(--gold);border-radius:6px;padding:4px 10px;font-size:0.75rem;font-weight:600}
+.logout-btn{
+  background:transparent;border:1px solid var(--border2);color:var(--text3);
+  border-radius:7px;padding:5px 12px;font-size:0.78rem;cursor:pointer;
+  font-family:inherit;transition:border-color .2s,color .2s}
+.logout-btn:hover{border-color:var(--err);color:var(--err)}
+
+/* ── Cards ── */
+.stats-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:14px;margin-bottom:20px}
+.stat-card{
+  background:var(--bg2);border:1px solid var(--border);border-radius:12px;
+  padding:16px;display:flex;flex-direction:column;gap:6px}
+.stat-card-val{font-size:1.8rem;font-weight:700;color:var(--gold)}
+.stat-card-label{font-size:0.75rem;color:var(--text3)}
+.stat-card-sub{font-size:0.72rem;color:var(--text4)}
+
+/* ── Section ── */
+.section{background:var(--bg2);border:1px solid var(--border);border-radius:14px;padding:18px;margin-bottom:16px}
+.section-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px}
+.section-title{font-size:0.95rem;font-weight:700;color:var(--text)}
+.section-sub{font-size:0.75rem;color:var(--text4)}
+
+/* ── Scan Box ── */
+.scan-box{
+  background:var(--bg3);border:2px dashed var(--border2);border-radius:12px;
+  padding:24px;text-align:center;margin-bottom:16px;cursor:pointer;
+  transition:border-color .2s}
+.scan-box:hover,.scan-box.drag-over{border-color:var(--gold)}
+.scan-icon{font-size:3rem;margin-bottom:10px}
+.scan-label{color:var(--text3);font-size:0.88rem}
+#scan-input{display:none}
+
+/* ── Forms ── */
+.form-row{display:grid;gap:12px;margin-bottom:14px}
+.form-row.cols2{grid-template-columns:1fr 1fr}
+.form-row.cols3{grid-template-columns:1fr 1fr 1fr}
+.field label{display:block;font-size:0.75rem;color:var(--text3);margin-bottom:5px}
+input[type=text],input[type=number],input[type=search],select,textarea{
+  width:100%;background:var(--bg);border:1.5px solid var(--border);border-radius:8px;
+  padding:9px 12px;color:var(--text);font-size:0.88rem;font-family:inherit;outline:none;
+  transition:border-color .2s;-webkit-appearance:none;appearance:none}
+input:focus,select:focus,textarea:focus{border-color:var(--gold)}
+input::placeholder{color:var(--text4)}
+select option{background:var(--bg2)}
+
+/* ── Buttons ── */
+.btn{
+  padding:9px 18px;border-radius:9px;font-size:0.85rem;font-weight:600;
+  cursor:pointer;border:none;font-family:inherit;transition:opacity .15s,transform .1s;
+  display:inline-flex;align-items:center;gap:6px;-webkit-appearance:none}
+.btn:hover{opacity:.88;transform:translateY(-1px)}
+.btn:active{transform:translateY(0)}
+.btn:disabled{opacity:.4;cursor:not-allowed;transform:none}
+.btn-primary{background:linear-gradient(135deg,var(--gold),var(--gold2));color:#0d0805}
+.btn-success{background:#065f46;color:#6ee7b7;border:1px solid #047857}
+.btn-danger{background:#450a0a;color:#fca5a5;border:1px solid #991b1b}
+.btn-outline{background:transparent;color:var(--text2);border:1px solid var(--border2)}
+.btn-sm{padding:6px 12px;font-size:0.78rem}
+
+/* ── Customer Result Card ── */
+#customer-result{display:none;margin-bottom:14px}
+.cust-card{
+  background:var(--bg3);border:1px solid var(--border2);border-radius:12px;
+  padding:16px;display:flex;align-items:center;gap:16px;flex-wrap:wrap}
+.cust-avatar{
+  width:50px;height:50px;border-radius:50%;
+  background:linear-gradient(135deg,var(--bg2),var(--border));
+  display:flex;align-items:center;justify-content:center;
+  font-size:1.3rem;font-weight:700;color:var(--gold);flex-shrink:0;
+  border:2px solid var(--border2)}
+.cust-info{flex:1;min-width:140px}
+.cust-name{font-size:1rem;font-weight:700;color:var(--text);margin-bottom:3px}
+.cust-meta{font-size:0.75rem;color:var(--text3);line-height:1.6}
+.cust-stats{display:flex;gap:16px;margin-top:10px;flex-wrap:wrap}
+.cust-stat{text-align:center}
+.cust-stat-val{font-size:1.2rem;font-weight:700;color:var(--gold)}
+.cust-stat-label{font-size:0.68rem;color:var(--text4)}
+.tier-pill{
+  padding:4px 12px;border-radius:16px;font-size:0.75rem;font-weight:600;
+  border:1px solid currentColor;white-space:nowrap}
+.tier-BRONZE{color:#cd7f32;border-color:#cd7f32;background:rgba(205,127,50,.1)}
+.tier-SILVER{color:#aaa;border-color:#aaa;background:rgba(170,170,170,.1)}
+.tier-GOLD{color:#ffd700;border-color:#ffd700;background:rgba(255,215,0,.1)}
+.tier-PLATINUM{color:#e5e4e2;border-color:#e5e4e2;background:rgba(229,228,226,.1)}
+
+/* ── Points Actions ── */
+.points-actions{display:flex;gap:10px;flex-wrap:wrap;margin-top:12px}
+
+/* ── Alert ── */
+.alert{border-radius:8px;padding:10px 14px;font-size:0.83rem;margin-bottom:12px}
+.alert-ok{background:#022c22;border:1px solid #047857;color:#6ee7b7}
+.alert-err{background:#2a0808;border:1px solid #991b1b;color:#fca5a5}
+.alert-warn{background:#1c1408;border:1px solid #b45309;color:#fcd34d}
+
+/* ── Table ── */
+.table-wrap{overflow-x:auto;-webkit-overflow-scrolling:touch}
+table{width:100%;border-collapse:collapse;font-size:0.82rem}
+th{color:var(--text4);font-size:0.72rem;font-weight:600;text-align:right;
+   padding:8px 12px;border-bottom:1px solid var(--border);white-space:nowrap}
+td{padding:10px 12px;border-bottom:1px solid var(--border);color:var(--text2);vertical-align:middle}
+tr:last-child td{border-bottom:none}
+tr:hover td{background:var(--bg3)}
+.badge{display:inline-block;padding:2px 10px;border-radius:12px;font-size:0.72rem;font-weight:600}
+.badge-ok{background:rgba(16,185,129,.15);color:#34d399;border:1px solid rgba(16,185,129,.3)}
+.badge-warn{background:rgba(245,158,11,.15);color:#fbbf24;border:1px solid rgba(245,158,11,.3)}
+.badge-err{background:rgba(244,63,94,.15);color:#fb7185;border:1px solid rgba(244,63,94,.3)}
+.badge-info{background:rgba(59,130,246,.15);color:#93c5fd;border:1px solid rgba(59,130,246,.3)}
+.text-gold{color:var(--gold)}
+.text-ok{color:var(--ok)}
+.text-err{color:var(--err)}
+
+/* ── Login Screen ── */
+#login-screen{
+  position:fixed;inset:0;background:var(--bg);
+  display:flex;align-items:center;justify-content:center;z-index:9999}
+.login-card{
+  background:var(--bg2);border:1px solid var(--border);border-radius:18px;
+  padding:32px 28px;width:100%;max-width:380px;text-align:center}
+.login-logo{font-size:1.8rem;font-weight:900;color:var(--gold);letter-spacing:3px;margin-bottom:6px}
+.login-sub{color:var(--text3);font-size:0.82rem;margin-bottom:24px}
+.login-field{margin-bottom:14px;text-align:right}
+.login-field label{display:block;font-size:0.75rem;color:var(--text3);margin-bottom:5px}
+#login-err{color:var(--err);font-size:0.78rem;margin-bottom:10px;min-height:18px}
+
+/* ── Spinner ── */
+.spinner{display:inline-block;width:14px;height:14px;border:2px solid rgba(255,255,255,.2);border-top-color:#fff;border-radius:50%;animation:spin .8s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+/* ── Empty State ── */
+.empty{text-align:center;padding:32px;color:var(--text4)}
+.empty-icon{font-size:2.5rem;margin-bottom:10px}
+
+/* ── Page hidden ── */
+.page{display:none}
+.page.active{display:block}
+
+/* ── Mobile ── */
+@media(max-width:700px){
+  .sidebar{display:none}
+  .form-row.cols2,.form-row.cols3{grid-template-columns:1fr}
+  .mobile-menu-btn{display:flex}
+}
+.mobile-menu-btn{display:none;background:none;border:none;color:var(--text);font-size:1.3rem;cursor:pointer;padding:4px}
+</style>
+</head>
+<body>
+
+<!-- Login -->
+<div id="login-screen">
+  <div class="login-card">
+    <div class="login-logo">🍫 dipndip</div>
+    <div class="login-sub">لوحة إدارة الولاء — للموظفين فقط</div>
+    <div class="login-field">
+      <label>البريد الإلكتروني</label>
+      <input type="text" id="login-email" placeholder="admin@dipndip.ly" autocomplete="username">
+    </div>
+    <div class="login-field">
+      <label>كلمة المرور</label>
+      <input type="password" id="login-pass" placeholder="••••••••" autocomplete="current-password" onkeydown="if(event.key==='Enter')doLogin()">
+    </div>
+    <div id="login-err"></div>
+    <button class="btn btn-primary" style="width:100%;justify-content:center" id="login-btn" onclick="doLogin()">
+      دخول
+    </button>
+  </div>
+</div>
+
+<!-- App -->
+<div id="app" style="display:none">
+
+  <!-- Sidebar -->
+  <div class="sidebar">
+    <div class="sidebar-logo">🍫 dipndip <span>لوحة إدارة الولاء</span></div>
+    <nav class="nav">
+      <div class="nav-item active" onclick="showPage('scan')" data-page="scan"><span class="nav-icon">📲</span> مسح بطاقة</div>
+      <div class="nav-item" onclick="showPage('search')" data-page="search"><span class="nav-icon">🔍</span> بحث عملاء</div>
+      <div class="nav-item" onclick="showPage('customers')" data-page="customers"><span class="nav-icon">👥</span> قائمة العملاء</div>
+      <div class="nav-item" onclick="showPage('transactions')" data-page="transactions"><span class="nav-icon">🧾</span> المعاملات</div>
+      <div class="nav-item" onclick="showPage('stats')" data-page="stats"><span class="nav-icon">📊</span> الإحصائيات</div>
+    </nav>
+    <div class="sidebar-footer">dipndip Libya © 2025</div>
+  </div>
+
+  <!-- Main -->
+  <div class="main">
+    <div class="topbar">
+      <div style="display:flex;align-items:center;gap:10px">
+        <button class="mobile-menu-btn" onclick="toggleSidebar()">☰</button>
+        <div class="topbar-title" id="topbar-title">مسح بطاقة العميل</div>
+      </div>
+      <div class="topbar-right">
+        <div class="staff-badge" id="staff-badge">موظف</div>
+        <button class="logout-btn" onclick="doLogout()">خروج</button>
+      </div>
+    </div>
+
+    <div class="content">
+
+      <!-- Page: Scan -->
+      <div class="page active" id="page-scan">
+        <div class="section">
+          <div class="section-header">
+            <div>
+              <div class="section-title">مسح أو بحث عن عميل</div>
+              <div class="section-sub">امسح QR أو أدخل رقم العضوية يدوياً</div>
+            </div>
+          </div>
+
+          <div id="scan-alert"></div>
+
+          <div class="form-row cols2">
+            <div class="field">
+              <label>رقم العضوية / الاسم / الهاتف</label>
+              <input type="search" id="quick-search" placeholder="DIP-00001 أو اسم العميل..." onkeydown="if(event.key==='Enter')quickSearch()">
+            </div>
+            <div class="field" style="display:flex;align-items:flex-end;gap:8px">
+              <button class="btn btn-primary" onclick="quickSearch()" style="flex:1;justify-content:center">بحث</button>
+              <button class="btn btn-outline" onclick="document.getElementById('scan-input').click()">📷 كاميرا</button>
+              <input type="file" id="scan-input" accept="image/*" capture="environment" onchange="handleScanUpload(event)">
+            </div>
+          </div>
+
+          <!-- Customer Card -->
+          <div id="customer-result">
+            <div class="cust-card" id="cust-card-inner">
+              <div class="cust-avatar" id="cust-avatar">?</div>
+              <div class="cust-info">
+                <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
+                  <div class="cust-name" id="cust-name">---</div>
+                  <div class="tier-pill" id="cust-tier-pill">---</div>
+                </div>
+                <div class="cust-meta" id="cust-meta">---</div>
+                <div class="cust-stats">
+                  <div class="cust-stat"><div class="cust-stat-val" id="cust-points">0</div><div class="cust-stat-label">نقطة</div></div>
+                  <div class="cust-stat"><div class="cust-stat-val" id="cust-visits">0</div><div class="cust-stat-label">زيارة</div></div>
+                  <div class="cust-stat"><div class="cust-stat-val" id="cust-tier-val">—</div><div class="cust-stat-label">المستوى</div></div>
+                </div>
+              </div>
+              <a class="btn btn-outline btn-sm" id="cust-card-link" href="#" target="_blank">🪪 بطاقته</a>
+            </div>
+
+            <!-- Points Actions -->
+            <div class="points-actions" id="points-actions">
+              <div class="field" style="flex:1;min-width:120px">
+                <label>عدد النقاط</label>
+                <input type="number" id="pts-amount" value="10" min="1" max="9999" placeholder="10">
+              </div>
+              <div class="field" style="flex:1;min-width:120px">
+                <label>ملاحظة</label>
+                <input type="text" id="pts-note" placeholder="زيارة فرع الدهماني" maxlength="80">
+              </div>
+              <div class="field" style="display:flex;align-items:flex-end;gap:8px;flex-wrap:wrap">
+                <button class="btn btn-success" onclick="earnPoints()">+ كسب نقاط</button>
+                <button class="btn btn-danger" onclick="redeemPoints()">− استبدال</button>
+              </div>
+            </div>
+          </div>
+
+          <!-- Last TX for this customer -->
+          <div id="cust-tx-section" style="display:none;margin-top:16px">
+            <div class="section-title" style="margin-bottom:10px;font-size:0.85rem">آخر معاملاته</div>
+            <div class="table-wrap">
+              <table>
+                <thead><tr><th>التاريخ</th><th>الوصف</th><th>النقاط</th><th>الرصيد</th></tr></thead>
+                <tbody id="cust-tx-body"><tr><td colspan="4" class="empty">لا توجد معاملات</td></tr></tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Page: Search -->
+      <div class="page" id="page-search">
+        <div class="section">
+          <div class="section-header"><div class="section-title">بحث متقدم</div></div>
+          <div class="form-row cols3">
+            <div class="field"><label>الاسم</label><input type="text" id="adv-name" placeholder="محمد..."></div>
+            <div class="field"><label>الهاتف</label><input type="text" id="adv-phone" placeholder="0912..."></div>
+            <div class="field"><label>المستوى</label>
+              <select id="adv-tier">
+                <option value="">الكل</option>
+                <option value="BRONZE">🥉 برونز</option>
+                <option value="SILVER">🥈 فضي</option>
+                <option value="GOLD">🥇 ذهبي</option>
+                <option value="PLATINUM">💎 بلاتيني</option>
+              </select>
+            </div>
+          </div>
+          <button class="btn btn-primary" onclick="advSearch()" style="margin-bottom:14px">بحث</button>
+          <div class="table-wrap">
+            <table>
+              <thead><tr><th>الاسم</th><th>الهاتف</th><th>المستوى</th><th>النقاط</th><th>منذ</th><th></th></tr></thead>
+              <tbody id="search-body"><tr><td colspan="6"><div class="empty"><div class="empty-icon">🔍</div>أدخل بيانات البحث</div></td></tr></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- Page: Customers -->
+      <div class="page" id="page-customers">
+        <div class="section">
+          <div class="section-header">
+            <div class="section-title">جميع العملاء</div>
+            <button class="btn btn-outline btn-sm" onclick="loadCustomers()">🔄 تحديث</button>
+          </div>
+          <div id="cust-loading" style="text-align:center;padding:20px;color:var(--text4)">جاري التحميل...</div>
+          <div class="table-wrap">
+            <table>
+              <thead><tr><th>الاسم</th><th>الهاتف</th><th>المستوى</th><th>النقاط</th><th>التسجيل</th><th></th></tr></thead>
+              <tbody id="customers-body"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- Page: Transactions -->
+      <div class="page" id="page-transactions">
+        <div class="section">
+          <div class="section-header">
+            <div class="section-title">سجل المعاملات</div>
+            <button class="btn btn-outline btn-sm" onclick="loadTransactions()">🔄 تحديث</button>
+          </div>
+          <div class="table-wrap">
+            <table>
+              <thead><tr><th>التاريخ</th><th>العميل</th><th>النوع</th><th>النقاط</th><th>الوصف</th></tr></thead>
+              <tbody id="tx-body"><tr><td colspan="5"><div class="empty"><div class="empty-icon">🧾</div>لا توجد معاملات</div></td></tr></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- Page: Stats -->
+      <div class="page" id="page-stats">
+        <div class="stats-grid" id="stats-grid">
+          <div class="stat-card"><div class="spinner" style="width:24px;height:24px;margin:auto"></div></div>
+        </div>
+        <div class="section" id="tier-dist-section">
+          <div class="section-title" style="margin-bottom:12px">توزيع المستويات</div>
+          <div id="tier-bars"></div>
+        </div>
+      </div>
+
+    </div><!-- /content -->
+  </div><!-- /main -->
+</div><!-- /app -->
+
+<script>
+const API = '/api/v1';
+let TOKEN = null;
+let CURRENT_CUSTOMER = null;
+const PAGE_TITLES = {
+  scan:'مسح بطاقة العميل', search:'بحث متقدم', customers:'قائمة العملاء',
+  transactions:'سجل المعاملات', stats:'الإحصائيات'
+};
+const TIERS = { BRONZE:'🥉 برونز', SILVER:'🥈 فضي', GOLD:'🥇 ذهبي', PLATINUM:'💎 بلاتيني' };
+
+// ── Auth ──
+function savedToken() { return localStorage.getItem('ddip_token'); }
+
+async function doLogin() {
+  const email = document.getElementById('login-email').value.trim();
+  const pass  = document.getElementById('login-pass').value;
+  const errEl = document.getElementById('login-err');
+  const btn   = document.getElementById('login-btn');
+  errEl.textContent = '';
+  if (!email || !pass) { errEl.textContent = 'أدخل البريد وكلمة المرور'; return; }
+  btn.disabled = true; btn.innerHTML = '<div class="spinner"></div>';
+  try {
+    const res = await fetch(API + '/auth/login', {
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({ email, password: pass })
+    });
+    const d = await res.json();
+    if (!res.ok) { errEl.textContent = d.message || 'بيانات غير صحيحة'; return; }
+    TOKEN = d.accessToken || d.token || d.access_token;
+    localStorage.setItem('ddip_token', TOKEN);
+    startApp(d.user || {});
+  } catch(e) {
+    errEl.textContent = 'تعذّر الاتصال بالخادم';
+  } finally {
+    btn.disabled = false; btn.textContent = 'دخول';
+  }
+}
+
+function doLogout() {
+  TOKEN = null; localStorage.removeItem('ddip_token');
+  document.getElementById('app').style.display = 'none';
+  document.getElementById('login-screen').style.display = 'flex';
+}
+
+function startApp(user) {
+  document.getElementById('login-screen').style.display = 'none';
+  document.getElementById('app').style.display = 'flex';
+  const name = user.firstName ? user.firstName + ' ' + (user.lastName||'') : (user.email || 'موظف');
+  document.getElementById('staff-badge').textContent = name;
+  loadStats();
+}
+
+async function authFetch(url, opts={}) {
+  const headers = { 'Content-Type':'application/json', ...(opts.headers||{}) };
+  if (TOKEN) headers['Authorization'] = 'Bearer ' + TOKEN;
+  return fetch(url, { ...opts, headers });
+}
+
+// ── Navigation ──
+function showPage(name) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+  document.getElementById('page-' + name).classList.add('active');
+  document.querySelector('[data-page="' + name + '"]').classList.add('active');
+  document.getElementById('topbar-title').textContent = PAGE_TITLES[name] || name;
+  if (name === 'customers') loadCustomers();
+  if (name === 'transactions') loadTransactions();
+  if (name === 'stats') loadStats();
+}
+
+// ── Quick Search / Scan ──
+async function quickSearch() {
+  const q = document.getElementById('quick-search').value.trim();
+  if (!q) return;
+  scanAlert('', '');
+  try {
+    const res = await authFetch(API + '/customers/search?q=' + encodeURIComponent(q));
+    if (!res.ok) { scanAlert('err', 'لم يُعثر على عميل'); hideCustomer(); return; }
+    const data = await res.json();
+    const list = Array.isArray(data) ? data : (data.items || data.data || [data]);
+    if (!list.length) { scanAlert('err', 'لم يُعثر على عميل'); hideCustomer(); return; }
+    showCustomer(list[0]);
+  } catch(e) {
+    scanAlert('err', 'خطأ في الاتصال');
+  }
+}
+
+function handleScanUpload(e) {
+  const file = e.target.files[0];
+  if (!file) return;
+  scanAlert('warn', 'تلميح: أدخل رقم العضوية يدوياً للنتائج الأسرع');
+}
+
+function hideCustomer() {
+  document.getElementById('customer-result').style.display = 'none';
+  document.getElementById('cust-tx-section').style.display = 'none';
+  CURRENT_CUSTOMER = null;
+}
+
+function showCustomer(d) {
+  CURRENT_CUSTOMER = d;
+  const initials = ((d.firstName||'?')[0] + (d.lastName||'')[0]).toUpperCase();
+  document.getElementById('cust-avatar').textContent = initials;
+  document.getElementById('cust-name').textContent = (d.firstName||'') + ' ' + (d.lastName||'');
+  const tier = d.tier || 'BRONZE';
+  const pill = document.getElementById('cust-tier-pill');
+  pill.textContent = TIERS[tier] || '🥉 برونز';
+  pill.className = 'tier-pill tier-' + tier;
+  document.getElementById('cust-meta').innerHTML =
+    '📱 ' + (d.phone||'—') + ' &nbsp;|&nbsp; 🆔 ' + (d.membershipNumber||d.id||'');
+  document.getElementById('cust-points').textContent = (d.pointsBalance||0).toLocaleString();
+  document.getElementById('cust-visits').textContent = d.totalVisits || 0;
+  document.getElementById('cust-tier-val').textContent = (TIERS[tier]||'').split(' ')[1] || tier;
+  document.getElementById('cust-card-link').href = '/card/' + d.id;
+  document.getElementById('customer-result').style.display = 'block';
+  loadCustomerTx(d.id);
+}
+
+async function loadCustomerTx(id) {
+  try {
+    const res = await authFetch(API + '/loyalty/transactions?customerId=' + id + '&limit=8');
+    if (!res.ok) return;
+    const data = await res.json();
+    const list = Array.isArray(data) ? data : (data.items || data.data || []);
+    const body = document.getElementById('cust-tx-body');
+    if (!list.length) { body.innerHTML = '<tr><td colspan="4"><div class="empty">لا توجد معاملات</div></td></tr>'; }
+    else body.innerHTML = list.map(t => {
+      const earn = t.type==='EARN' || t.points > 0;
+      const dt = new Date(t.createdAt||t.date).toLocaleDateString('ar-LY',{month:'short',day:'numeric'});
+      return `<tr>
+        <td>${dt}</td>
+        <td>${t.description||'—'}</td>
+        <td class="${earn?'text-ok':'text-err'}">${earn?'+':'−'}${Math.abs(t.points||t.amount||0)}</td>
+        <td class="text-gold">${t.balanceAfter||'—'}</td>
+      </tr>`;
+    }).join('');
+    document.getElementById('cust-tx-section').style.display = 'block';
+  } catch {}
+}
+
+// ── Points ──
+async function earnPoints() {
+  if (!CURRENT_CUSTOMER) return;
+  const amt = parseInt(document.getElementById('pts-amount').value) || 0;
+  const note = document.getElementById('pts-note').value.trim();
+  if (amt <= 0) { scanAlert('err', 'أدخل عدد النقاط'); return; }
+  await txAction('earn', amt, note);
+}
+async function redeemPoints() {
+  if (!CURRENT_CUSTOMER) return;
+  const amt = parseInt(document.getElementById('pts-amount').value) || 0;
+  const note = document.getElementById('pts-note').value.trim();
+  if (amt <= 0) { scanAlert('err', 'أدخل عدد النقاط'); return; }
+  await txAction('redeem', amt, note);
+}
+
+async function txAction(type, amount, note) {
+  const btns = document.querySelectorAll('#points-actions .btn');
+  btns.forEach(b => b.disabled = true);
+  try {
+    const res = await authFetch(API + '/loyalty/transactions', {
+      method:'POST',
+      body: JSON.stringify({
+        customerId: CURRENT_CUSTOMER.id,
+        type: type.toUpperCase(),
+        points: amount,
+        description: note || (type==='earn' ? 'كسب نقاط — موظف' : 'استبدال نقاط')
+      })
+    });
+    const d = await res.json();
+    if (!res.ok) { scanAlert('err', d.message || 'فشل العملية'); return; }
+    scanAlert('ok', (type==='earn' ? '✅ تمت إضافة ' : '✅ تم خصم ') + amount + ' نقطة. الرصيد الجديد: ' + (d.newBalance ?? d.balanceAfter ?? '—'));
+    // Refresh customer
+    const cr = await authFetch(API + '/customers/' + CURRENT_CUSTOMER.id);
+    if (cr.ok) showCustomer(await cr.json());
+  } catch(e) {
+    scanAlert('err', 'خطأ في الاتصال');
+  } finally {
+    btns.forEach(b => b.disabled = false);
+  }
+}
+
+// ── Customers List ──
+async function loadCustomers() {
+  document.getElementById('cust-loading').style.display = 'block';
+  try {
+    const res = await authFetch(API + '/customers?limit=50');
+    if (!res.ok) return;
+    const data = await res.json();
+    const list = Array.isArray(data) ? data : (data.items || data.data || []);
+    document.getElementById('cust-loading').style.display = 'none';
+    const body = document.getElementById('customers-body');
+    if (!list.length) { body.innerHTML = '<tr><td colspan="6"><div class="empty"><div class="empty-icon">👥</div>لا يوجد عملاء بعد</div></td></tr>'; return; }
+    body.innerHTML = list.map(d => {
+      const tier = d.tier||'BRONZE';
+      const dt = new Date(d.createdAt).toLocaleDateString('ar-LY',{year:'2-digit',month:'short',day:'numeric'});
+      return `<tr>
+        <td>${d.firstName||''} ${d.lastName||''}</td>
+        <td>${d.phone||'—'}</td>
+        <td><span class="tier-pill tier-${tier}" style="font-size:0.7rem;padding:2px 8px">${TIERS[tier]||tier}</span></td>
+        <td class="text-gold">${(d.pointsBalance||0).toLocaleString()}</td>
+        <td>${dt}</td>
+        <td><a class="btn btn-outline btn-sm" href="/card/${d.id}" target="_blank">🪪</a></td>
+      </tr>`;
+    }).join('');
+  } catch { document.getElementById('cust-loading').style.display = 'none'; }
+}
+
+// ── Advanced Search ──
+async function advSearch() {
+  const name  = document.getElementById('adv-name').value.trim();
+  const phone = document.getElementById('adv-phone').value.trim();
+  const tier  = document.getElementById('adv-tier').value;
+  const params = new URLSearchParams();
+  if (name)  params.set('name', name);
+  if (phone) params.set('phone', phone);
+  if (tier)  params.set('tier', tier);
+  try {
+    const res = await authFetch(API + '/customers?' + params);
+    const data = await res.json();
+    const list = Array.isArray(data) ? data : (data.items || data.data || []);
+    const body = document.getElementById('search-body');
+    if (!list.length) { body.innerHTML = '<tr><td colspan="6"><div class="empty"><div class="empty-icon">🔍</div>لا توجد نتائج</div></td></tr>'; return; }
+    body.innerHTML = list.map(d => {
+      const t = d.tier||'BRONZE';
+      const dt = new Date(d.createdAt).toLocaleDateString('ar-LY',{year:'2-digit',month:'short',day:'numeric'});
+      return `<tr>
+        <td>${d.firstName||''} ${d.lastName||''}</td>
+        <td>${d.phone||'—'}</td>
+        <td><span class="tier-pill tier-${t}" style="font-size:0.7rem;padding:2px 8px">${TIERS[t]||t}</span></td>
+        <td class="text-gold">${(d.pointsBalance||0).toLocaleString()}</td>
+        <td>${dt}</td>
+        <td><button class="btn btn-outline btn-sm" onclick='pickCustomer(${JSON.stringify(d)})'>تحديد</button></td>
+      </tr>`;
+    }).join('');
+  } catch {}
+}
+
+function pickCustomer(d) {
+  showPage('scan');
+  showCustomer(d);
+}
+
+// ── Transactions ──
+async function loadTransactions() {
+  try {
+    const res = await authFetch(API + '/loyalty/transactions?limit=30');
+    if (!res.ok) return;
+    const data = await res.json();
+    const list = Array.isArray(data) ? data : (data.items || data.data || []);
+    const body = document.getElementById('tx-body');
+    if (!list.length) { body.innerHTML = '<tr><td colspan="5"><div class="empty"><div class="empty-icon">🧾</div>لا توجد معاملات</div></td></tr>'; return; }
+    body.innerHTML = list.map(t => {
+      const earn = t.type==='EARN' || t.points > 0;
+      const dt = new Date(t.createdAt||t.date).toLocaleDateString('ar-LY',{month:'short',day:'numeric',hour:'2-digit',minute:'2-digit'});
+      const cust = t.customer ? (t.customer.firstName||'') + ' ' + (t.customer.lastName||'') : (t.customerId||'');
+      return `<tr>
+        <td>${dt}</td>
+        <td>${cust}</td>
+        <td><span class="badge ${earn?'badge-ok':'badge-err'}">${earn?'كسب':'استبدال'}</span></td>
+        <td class="${earn?'text-ok':'text-err'}">${earn?'+':'−'}${Math.abs(t.points||t.amount||0)}</td>
+        <td>${t.description||'—'}</td>
+      </tr>`;
+    }).join('');
+  } catch {}
+}
+
+// ── Stats ──
+async function loadStats() {
+  try {
+    const res = await authFetch(API + '/analytics/overview');
+    if (!res.ok) return;
+    const d = await res.json();
+    const grid = document.getElementById('stats-grid');
+    grid.innerHTML = [
+      { label:'إجمالي العملاء', val: d.totalCustomers||0, icon:'👥' },
+      { label:'نقاط مُكتسبة اليوم', val: (d.pointsEarnedToday||0).toLocaleString(), icon:'⭐' },
+      { label:'عملاء ذهبيون', val: d.goldCustomers||0, icon:'🥇' },
+      { label:'زيارات هذا الشهر', val: d.monthlyVisits||0, icon:'📅' },
+    ].map(s => `<div class="stat-card">
+      <div style="font-size:1.5rem">${s.icon}</div>
+      <div class="stat-card-val">${s.val}</div>
+      <div class="stat-card-label">${s.label}</div>
+    </div>`).join('');
+
+    if (d.tierDistribution) {
+      const tiers = d.tierDistribution;
+      const total = Object.values(tiers).reduce((a,b) => a+b, 0) || 1;
+      const colors = { BRONZE:'#cd7f32', SILVER:'#aaa', GOLD:'#ffd700', PLATINUM:'#e5e4e2' };
+      document.getElementById('tier-bars').innerHTML = Object.entries(tiers).map(([t, n]) => `
+        <div style="margin-bottom:12px">
+          <div style="display:flex;justify-content:space-between;font-size:0.78rem;margin-bottom:4px">
+            <span style="color:${colors[t]||'#aaa'}">${TIERS[t]||t}</span>
+            <span style="color:var(--text3)">${n} عميل</span>
+          </div>
+          <div style="background:var(--border);border-radius:999px;height:6px">
+            <div style="background:${colors[t]};height:6px;border-radius:999px;width:${Math.round(n/total*100)}%;transition:width .8s"></div>
+          </div>
+        </div>`).join('');
+    }
+  } catch {}
+}
+
+// ── Helpers ──
+function scanAlert(type, msg) {
+  const el = document.getElementById('scan-alert');
+  if (!msg) { el.innerHTML = ''; return; }
+  const cls = {ok:'alert-ok', err:'alert-err', warn:'alert-warn'}[type] || 'alert-warn';
+  el.innerHTML = `<div class="alert ${cls}">${msg}</div>`;
+}
+
+function toggleSidebar() {
+  const s = document.querySelector('.sidebar');
+  s.style.display = s.style.display === 'none' ? 'flex' : 'none';
+}
+
+// ── Boot ──
+(function boot() {
+  const t = savedToken();
+  if (t) {
+    TOKEN = t;
+    // Verify token
+    authFetch(API + '/auth/me').then(async r => {
+      if (r.ok) { const u = await r.json(); startApp(u); }
+      else doLogout();
+    }).catch(() => doLogout());
+  }
+})();
+</script>
+</body>
+</html>

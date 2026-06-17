@@ -1,0 +1,274 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<meta name="theme-color" content="#0d0805">
+<title>dipndip — بطاقتي</title>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#0d0805;--bg2:#1a1008;--bg3:#261508;
+  --border:#3a2010;--border2:#5a3018;
+  --gold:#c8860a;--gold2:#e8a020;
+  --text:#f5e6d0;--text2:#c4a882;--text3:#8a6040;--text4:#5a4030;
+  --bronze:#cd7f32;--silver:#aaa;--gold-tier:#ffd700;--platinum:#e5e4e2;
+  --ok:#10b981;--err:#f43f5e;
+}
+html,body{min-height:100%;background:var(--bg);color:var(--text);font-family:'Segoe UI',Tahoma,Arial,sans-serif;-webkit-font-smoothing:antialiased}
+body{display:flex;flex-direction:column;align-items:center;padding:20px 16px 40px}
+
+.logo{text-align:center;margin-bottom:20px;padding-top:16px}
+.logo-name{font-size:1.6rem;font-weight:900;color:var(--gold);letter-spacing:3px}
+
+/* ── Membership Card ── */
+.member-card{
+  width:100%;max-width:380px;
+  background:linear-gradient(135deg,#1a0e04 0%,#2d1a06 40%,#1a0e04 100%);
+  border:1px solid var(--gold);border-radius:20px;
+  padding:24px 22px 20px;margin-bottom:18px;
+  box-shadow:0 0 40px rgba(200,134,10,.15),0 8px 32px rgba(0,0,0,.5);
+  position:relative;overflow:hidden}
+.member-card::before{
+  content:'';position:absolute;top:-40%;right:-20%;
+  width:260px;height:260px;
+  background:radial-gradient(circle,rgba(200,134,10,.08) 0%,transparent 70%);
+  pointer-events:none}
+.card-logo{display:flex;align-items:center;justify-content:space-between;margin-bottom:20px}
+.card-brand{font-size:1.1rem;font-weight:900;color:var(--gold);letter-spacing:2px}
+.card-tier-badge{
+  padding:4px 14px;border-radius:20px;font-size:0.75rem;font-weight:700;
+  border:1px solid currentColor}
+.tier-BRONZE{color:var(--bronze);border-color:var(--bronze);background:rgba(205,127,50,.12)}
+.tier-SILVER{color:var(--silver);border-color:var(--silver);background:rgba(170,170,170,.12)}
+.tier-GOLD{color:var(--gold-tier);border-color:var(--gold-tier);background:rgba(255,215,0,.12)}
+.tier-PLATINUM{color:var(--platinum);border-color:var(--platinum);background:rgba(229,228,226,.12)}
+
+.card-name{font-size:1.3rem;font-weight:700;color:var(--text);margin-bottom:4px}
+.card-id{font-size:0.75rem;color:var(--text3);font-family:monospace;letter-spacing:1px;margin-bottom:20px}
+.card-stats{display:grid;grid-template-columns:1fr 1px 1fr;gap:0;align-items:center}
+.stat{text-align:center;padding:0 12px}
+.stat-val{font-size:1.6rem;font-weight:700;color:var(--gold)}
+.stat-label{font-size:0.7rem;color:var(--text3);margin-top:2px}
+.stat-divider{background:var(--border2);height:36px;width:1px}
+
+/* ── QR Section ── */
+.qr-section{
+  width:100%;max-width:380px;
+  background:var(--bg2);border:1px solid var(--border);border-radius:16px;
+  padding:20px;text-align:center;margin-bottom:16px}
+.qr-title{font-size:0.82rem;color:var(--text3);margin-bottom:14px}
+.qr-wrapper{background:#fff;border-radius:12px;padding:14px;display:inline-block;margin-bottom:10px}
+.qr-sub{font-size:0.72rem;color:var(--text4)}
+
+/* ── Wallet Buttons ── */
+.wallet-section{width:100%;max-width:380px;display:flex;flex-direction:column;gap:10px;margin-bottom:16px}
+.wallet-btn{
+  display:flex;align-items:center;justify-content:center;gap:8px;
+  padding:12px;border-radius:11px;font-size:0.9rem;font-weight:600;
+  cursor:pointer;border:none;font-family:inherit;text-decoration:none;
+  transition:opacity .2s;-webkit-appearance:none}
+.wallet-btn:hover{opacity:.88}
+.btn-apple{background:#1c1c1e;color:#fff;border:1px solid #3a3a3c}
+.btn-google{background:#1a73e8;color:#fff}
+.btn-outline{background:transparent;color:var(--gold);border:1px solid var(--border2)}
+
+/* ── Progress Bar ── */
+.progress-section{
+  width:100%;max-width:380px;
+  background:var(--bg2);border:1px solid var(--border);border-radius:14px;
+  padding:16px;margin-bottom:16px}
+.progress-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px}
+.progress-title{font-size:0.82rem;color:var(--text3)}
+.progress-pct{font-size:0.78rem;color:var(--gold);font-weight:600}
+.progress-track{background:var(--border);border-radius:999px;height:8px;overflow:hidden}
+.progress-fill{background:linear-gradient(90deg,var(--gold),var(--gold2));height:100%;border-radius:999px;transition:width .8s ease}
+.progress-labels{display:flex;justify-content:space-between;margin-top:6px;font-size:0.7rem;color:var(--text4)}
+
+/* ── Transactions ── */
+.tx-section{
+  width:100%;max-width:380px;
+  background:var(--bg2);border:1px solid var(--border);border-radius:14px;
+  padding:16px;margin-bottom:16px}
+.tx-title{font-size:0.85rem;color:var(--text2);font-weight:600;margin-bottom:12px}
+.tx-item{display:flex;justify-content:space-between;align-items:center;padding:10px 0;border-bottom:1px solid var(--border)}
+.tx-item:last-child{border-bottom:none}
+.tx-desc{font-size:0.82rem;color:var(--text)}
+.tx-date{font-size:0.7rem;color:var(--text4);margin-top:2px}
+.tx-pts{font-size:0.88rem;font-weight:700}
+.tx-pts.earn{color:var(--ok)}
+.tx-pts.redeem{color:var(--err)}
+.no-tx{color:var(--text4);font-size:0.82rem;text-align:center;padding:12px 0}
+
+/* ── Loading ── */
+#loading{text-align:center;padding:60px 20px;color:var(--text3)}
+.spinner{width:36px;height:36px;border:3px solid var(--border);border-top-color:var(--gold);border-radius:50%;animation:spin .8s linear infinite;margin:0 auto 16px}
+@keyframes spin{to{transform:rotate(360deg)}}
+#error-screen{display:none;text-align:center;padding:40px 20px;color:var(--err)}
+</style>
+</head>
+<body>
+
+<div class="logo"><div class="logo-name">🍫 dipndip</div></div>
+
+<div id="loading"><div class="spinner"></div><div>جاري تحميل بطاقتك...</div></div>
+<div id="error-screen"><div style="font-size:2rem;margin-bottom:12px">⚠️</div><div id="error-msg">تعذّر تحميل البطاقة</div></div>
+<div id="main" style="display:none;width:100%;display:none;flex-direction:column;align-items:center">
+
+  <!-- Physical-look card -->
+  <div class="member-card">
+    <div class="card-logo">
+      <div class="card-brand">dipndip</div>
+      <div class="card-tier-badge" id="tier-badge">🥉 برونز</div>
+    </div>
+    <div class="card-name" id="card-name">---</div>
+    <div class="card-id" id="card-id">---</div>
+    <div class="card-stats">
+      <div class="stat">
+        <div class="stat-val" id="stat-points">0</div>
+        <div class="stat-label">نقطة</div>
+      </div>
+      <div class="stat-divider"></div>
+      <div class="stat">
+        <div class="stat-val" id="stat-visits">0</div>
+        <div class="stat-label">زيارة</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- QR -->
+  <div class="qr-section">
+    <div class="qr-title">أرِ هذا الرمز للكاشير</div>
+    <div class="qr-wrapper"><img id="qr-img" width="160" height="160" alt="QR Code"></div>
+    <div class="qr-sub" id="qr-sub">رقم العضوية</div>
+  </div>
+
+  <!-- Tier progress -->
+  <div class="progress-section">
+    <div class="progress-header">
+      <span class="progress-title" id="next-tier-label">التقدم نحو الفضي</span>
+      <span class="progress-pct" id="progress-pct">0%</span>
+    </div>
+    <div class="progress-track"><div class="progress-fill" id="progress-fill" style="width:0%"></div></div>
+    <div class="progress-labels">
+      <span id="progress-from">0</span>
+      <span id="progress-to">1000 نقطة</span>
+    </div>
+  </div>
+
+  <!-- Wallet buttons -->
+  <div class="wallet-section">
+    <a class="wallet-btn btn-apple" id="apple-btn" href="#" download="dipndip.pkpass">🍎 &nbsp; Apple Wallet</a>
+    <a class="wallet-btn btn-google" id="google-btn" href="#" target="_blank" rel="noopener">💳 &nbsp; Google Wallet</a>
+    <button class="wallet-btn btn-outline" onclick="window.location.reload()">🔄 تحديث البطاقة</button>
+  </div>
+
+  <!-- Transaction history -->
+  <div class="tx-section">
+    <div class="tx-title">آخر المعاملات</div>
+    <div id="tx-list"><div class="no-tx">لا توجد معاملات بعد</div></div>
+  </div>
+
+</div>
+
+<script>
+const API = '/api/v1';
+const TIERS = { BRONZE:'🥉 برونز', SILVER:'🥈 فضي', GOLD:'🥇 ذهبي', PLATINUM:'💎 بلاتيني' };
+const TIER_CLASS = { BRONZE:'tier-BRONZE', SILVER:'tier-SILVER', GOLD:'tier-GOLD', PLATINUM:'tier-PLATINUM' };
+const TIER_THRESHOLDS = { BRONZE:0, SILVER:1000, GOLD:3000, PLATINUM:7000 };
+const TIER_ORDER = ['BRONZE','SILVER','GOLD','PLATINUM'];
+
+// Get customer ID from URL path: /card/<id>
+const pathParts = window.location.pathname.split('/').filter(Boolean);
+const customerId = pathParts[pathParts.length - 1];
+
+async function load() {
+  if (!customerId || customerId === 'card') {
+    showError('رابط البطاقة غير صحيح');
+    return;
+  }
+  try {
+    const res = await fetch(API + '/customers/' + customerId + '/card', {
+      headers: {'Accept': 'application/json'}
+    });
+    if (!res.ok) {
+      const d = await res.json().catch(() => ({}));
+      showError(d.message || 'البطاقة غير موجودة');
+      return;
+    }
+    const d = await res.json();
+    render(d);
+  } catch(e) {
+    showError('تعذّر الاتصال بالخادم');
+  }
+}
+
+function render(d) {
+  document.getElementById('loading').style.display = 'none';
+  document.getElementById('main').style.display = 'flex';
+  const tier = d.tier || 'BRONZE';
+  document.getElementById('card-name').textContent = (d.firstName||'') + ' ' + (d.lastName||'');
+  document.getElementById('card-id').textContent = d.membershipNumber || d.id;
+  const badge = document.getElementById('tier-badge');
+  badge.textContent = TIERS[tier] || TIERS.BRONZE;
+  badge.className = 'card-tier-badge ' + (TIER_CLASS[tier] || 'tier-BRONZE');
+  document.getElementById('stat-points').textContent = (d.pointsBalance||0).toLocaleString();
+  document.getElementById('stat-visits').textContent = d.totalVisits || 0;
+
+  // QR
+  const memberNum = d.membershipNumber || d.id;
+  document.getElementById('qr-img').src = 'https://api.qrserver.com/v1/create-qr-code/?size=160x160&margin=4&data=' + encodeURIComponent(memberNum);
+  document.getElementById('qr-sub').textContent = memberNum;
+
+  // Tier progress
+  const tierIdx = TIER_ORDER.indexOf(tier);
+  if (tierIdx < TIER_ORDER.length - 1) {
+    const nextTier = TIER_ORDER[tierIdx + 1];
+    const pts = d.pointsBalance || 0;
+    const from = TIER_THRESHOLDS[tier];
+    const to = TIER_THRESHOLDS[nextTier];
+    const pct = Math.min(100, Math.round((pts - from) / (to - from) * 100));
+    document.getElementById('next-tier-label').textContent = 'التقدم نحو ' + TIERS[nextTier].replace(/^[^\s]+\s/,'');
+    document.getElementById('progress-pct').textContent = pct + '%';
+    document.getElementById('progress-fill').style.width = pct + '%';
+    document.getElementById('progress-from').textContent = pts.toLocaleString();
+    document.getElementById('progress-to').textContent = to.toLocaleString() + ' نقطة';
+  } else {
+    document.getElementById('next-tier-label').textContent = '🏆 أعلى مستوى — بلاتيني!';
+    document.getElementById('progress-pct').textContent = '100%';
+    document.getElementById('progress-fill').style.width = '100%';
+    document.getElementById('progress-from').textContent = '';
+    document.getElementById('progress-to').textContent = '';
+  }
+
+  // Wallet
+  document.getElementById('apple-btn').href = API + '/wallet/apple/' + d.id + '/pass';
+  document.getElementById('google-btn').href = d.googleWalletUrl || '#';
+
+  // Transactions
+  const txList = document.getElementById('tx-list');
+  if (d.transactions && d.transactions.length) {
+    txList.innerHTML = d.transactions.slice(0,10).map(t => {
+      const earn = t.type === 'EARN' || t.points > 0;
+      const dt = new Date(t.createdAt).toLocaleDateString('ar-LY', {year:'numeric',month:'short',day:'numeric'});
+      return `<div class="tx-item">
+        <div>
+          <div class="tx-desc">${t.description || (earn ? 'كسب نقاط' : 'استبدال نقاط')}</div>
+          <div class="tx-date">${dt}</div>
+        </div>
+        <div class="tx-pts ${earn ? 'earn' : 'redeem'}">${earn ? '+' : '-'}${Math.abs(t.points)}</div>
+      </div>`;
+    }).join('');
+  }
+}
+
+function showError(msg) {
+  document.getElementById('loading').style.display = 'none';
+  document.getElementById('error-screen').style.display = 'block';
+  document.getElementById('error-msg').textContent = msg;
+}
+
+load();
+</script>
+</body>
+</html>

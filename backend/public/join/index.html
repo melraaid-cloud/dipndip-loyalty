@@ -1,0 +1,348 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<meta name="theme-color" content="#0d0805">
+<title>dipndip — انضم لبرنامج الولاء</title>
+<meta name="description" content="سجّل في برنامج ولاء dipndip واكسب نقاطاً في كل زيارة">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#0d0805;--bg2:#1a1008;--bg3:#261508;
+  --border:#3a2010;--border2:#5a3018;
+  --gold:#c8860a;--gold2:#e8a020;
+  --text:#f5e6d0;--text2:#c4a882;--text3:#8a6040;--text4:#5a4030;
+  --ok:#10b981;--err:#f43f5e;
+  --radius:12px;
+}
+html,body{min-height:100%;background:var(--bg);color:var(--text);font-family:'Segoe UI',Tahoma,Arial,sans-serif;-webkit-font-smoothing:antialiased}
+body{display:flex;flex-direction:column;align-items:center;justify-content:flex-start;padding:20px 16px 40px}
+
+/* ── Logo ── */
+.logo{text-align:center;margin-bottom:28px;padding-top:24px}
+.logo-name{font-size:2rem;font-weight:900;color:var(--gold);letter-spacing:3px}
+.logo-tag{color:var(--text3);font-size:0.82rem;margin-top:4px}
+
+/* ── Card ── */
+.card{background:var(--bg2);border:1px solid var(--border);border-radius:18px;padding:28px 24px;width:100%;max-width:440px;box-shadow:0 12px 40px rgba(0,0,0,.5)}
+
+/* ── Form ── */
+.form-title{font-size:1.15rem;font-weight:700;text-align:center;margin-bottom:22px;color:var(--text)}
+.row{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.field{margin-bottom:14px}
+label{display:block;font-size:0.78rem;color:var(--text3);margin-bottom:6px;font-weight:500}
+.req{color:var(--gold)}
+input[type="text"],input[type="tel"],input[type="email"],input[type="date"]{
+  width:100%;background:var(--bg);border:1.5px solid var(--border);border-radius:9px;
+  padding:10px 13px;color:var(--text);font-size:0.92rem;font-family:inherit;outline:none;
+  transition:border-color .2s;-webkit-appearance:none}
+input:focus{border-color:var(--gold)}
+input::placeholder{color:var(--text4)}
+.error{color:var(--err);font-size:0.75rem;margin-top:4px;display:none}
+
+/* ── Submit ── */
+.btn-primary{
+  width:100%;background:linear-gradient(135deg,var(--gold),var(--gold2));
+  color:#0d0805;border:none;border-radius:11px;padding:13px;
+  font-size:1rem;font-weight:700;cursor:pointer;margin-top:6px;
+  font-family:inherit;transition:opacity .2s,transform .1s;
+  -webkit-appearance:none}
+.btn-primary:hover{opacity:.9;transform:translateY(-1px)}
+.btn-primary:active{transform:translateY(0)}
+.btn-primary:disabled{opacity:.5;cursor:not-allowed;transform:none}
+
+/* ── Alert ── */
+.alert{border-radius:9px;padding:10px 14px;font-size:0.83rem;margin-bottom:14px;display:none}
+.alert-err{background:#2a0808;border:1px solid #8b0000;color:#ff8080}
+.alert-ok{background:#062a1a;border:1px solid #0d6b40;color:#4ade80}
+
+/* ── Success Screen ── */
+#success-screen{display:none;text-align:center}
+.success-icon{font-size:3.5rem;margin-bottom:14px}
+.success-title{font-size:1.5rem;font-weight:700;color:var(--gold);margin-bottom:6px}
+.success-sub{color:var(--text3);font-size:0.88rem;margin-bottom:20px;line-height:1.6}
+.loyalty-id-box{
+  background:var(--bg);border:1.5px solid var(--gold);border-radius:10px;
+  padding:14px 20px;display:inline-block;margin-bottom:12px}
+.loyalty-id-label{font-size:0.72rem;color:var(--text3);margin-bottom:4px}
+.loyalty-id-value{font-size:1.3rem;font-weight:700;color:var(--gold);letter-spacing:3px;font-family:monospace}
+.tier-pill{
+  display:inline-flex;align-items:center;gap:6px;
+  background:rgba(200,134,10,.12);border:1px solid rgba(200,134,10,.3);
+  color:var(--gold);border-radius:20px;padding:5px 16px;font-size:0.85rem;
+  font-weight:600;margin-bottom:22px}
+
+/* ── QR ── */
+.qr-area{background:#fff;border-radius:14px;padding:16px;display:inline-block;margin-bottom:20px}
+.qr-area svg{display:block}
+.qr-label{color:var(--text3);font-size:0.75rem;margin-top:8px;text-align:center}
+
+/* ── Wallet Buttons ── */
+.wallet-btns{display:flex;flex-direction:column;gap:10px;margin-bottom:18px}
+.wallet-btn{
+  display:flex;align-items:center;justify-content:center;gap:8px;
+  padding:12px;border-radius:11px;font-size:0.92rem;font-weight:600;
+  cursor:pointer;border:none;font-family:inherit;text-decoration:none;
+  transition:opacity .2s}
+.wallet-btn:hover{opacity:.88}
+.btn-apple{background:#1c1c1e;color:#fff;border:1px solid #3a3a3c}
+.btn-google{background:#1a73e8;color:#fff}
+.btn-loading{background:var(--bg3);color:var(--text4);border:1px solid var(--border);cursor:not-allowed}
+.spinner{display:inline-block;width:14px;height:14px;border:2px solid var(--text4);border-top-color:var(--gold);border-radius:50%;animation:spin .8s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+/* ── Card Page Link ── */
+.card-link{
+  background:var(--bg3);border:1px solid var(--border2);border-radius:10px;
+  padding:10px 16px;display:flex;align-items:center;justify-content:space-between;
+  text-decoration:none;color:var(--text);font-size:0.85rem;margin-bottom:14px}
+.card-link:hover{border-color:var(--gold)}
+.card-link-url{color:var(--gold);font-size:0.75rem;font-family:monospace;word-break:break-all;direction:ltr;text-align:left}
+
+.divider{border:none;border-top:1px solid var(--border);margin:20px 0}
+.footer-note{color:var(--text4);font-size:0.75rem;line-height:1.6;text-align:center}
+
+/* ── Points info ── */
+.points-info{
+  background:var(--bg3);border:1px solid var(--border);border-radius:10px;
+  padding:14px 16px;margin-bottom:16px;text-align:center}
+.points-val{font-size:1.8rem;font-weight:700;color:var(--gold)}
+.points-label{font-size:0.75rem;color:var(--text3);margin-top:2px}
+</style>
+</head>
+<body>
+
+<div class="logo">
+  <div class="logo-name">🍫 dipndip</div>
+  <div class="logo-tag">برنامج الولاء — كل زيارة تستحق مكافأة</div>
+</div>
+
+<div class="card">
+  <!-- Register Form -->
+  <div id="form-section">
+    <div class="form-title">سجّل وابدأ تجميع النقاط</div>
+    <div class="alert alert-err" id="err-alert"></div>
+
+    <div class="row">
+      <div class="field">
+        <label>الاسم الأول <span class="req">*</span></label>
+        <input type="text" id="firstName" placeholder="محمد" autocomplete="given-name">
+        <div class="error" id="err-first">مطلوب</div>
+      </div>
+      <div class="field">
+        <label>الاسم الأخير <span class="req">*</span></label>
+        <input type="text" id="lastName" placeholder="العربي" autocomplete="family-name">
+        <div class="error" id="err-last">مطلوب</div>
+      </div>
+    </div>
+
+    <div class="field">
+      <label>رقم الهاتف <span class="req">*</span></label>
+      <input type="tel" id="phone" placeholder="0912345678" autocomplete="tel" inputmode="tel">
+      <div class="error" id="err-phone">رقم هاتف غير صحيح</div>
+    </div>
+
+    <div class="field">
+      <label>تاريخ الميلاد <span style="color:var(--text4)">(اختياري)</span></label>
+      <input type="date" id="birthday" max="">
+    </div>
+
+    <button class="btn-primary" id="submit-btn" onclick="submitForm()">
+      انضم الآن 🎉
+    </button>
+  </div>
+
+  <!-- Success Screen -->
+  <div id="success-screen">
+    <div class="success-icon">🎉</div>
+    <div class="success-title" id="welcome-name">أهلاً بك!</div>
+    <div class="success-sub">تم تسجيلك بنجاح في برنامج الولاء</div>
+
+    <div class="loyalty-id-box">
+      <div class="loyalty-id-label">رقم عضويتك</div>
+      <div class="loyalty-id-value" id="loyalty-id">---</div>
+    </div>
+    <br>
+    <div class="tier-pill" id="tier-pill">🥉 برونز</div>
+
+    <div class="points-info">
+      <div class="points-val" id="points-val">0</div>
+      <div class="points-label">نقطة في رصيدك</div>
+    </div>
+
+    <!-- QR Code -->
+    <div class="qr-area" id="qr-area">
+      <div id="qr-placeholder" style="width:180px;height:180px;display:flex;align-items:center;justify-content:center;color:#ccc;font-size:0.8rem">
+        جاري التحميل...
+      </div>
+    </div>
+    <div class="qr-label">أرِ هذا الرمز للكاشير لكسب النقاط</div>
+
+    <div class="divider"></div>
+
+    <!-- Wallet Buttons -->
+    <p style="color:var(--text3);font-size:0.82rem;margin-bottom:14px">أضف بطاقتك للمحفظة للوصول السريع</p>
+    <div class="wallet-btns">
+      <a class="wallet-btn btn-apple" id="apple-btn" href="#" style="display:none" download="dipndip.pkpass">
+        🍎 &nbsp; أضف إلى Apple Wallet
+      </a>
+      <div class="wallet-btn btn-loading" id="apple-loading">
+        <div class="spinner"></div>&nbsp; جاري تحضير بطاقة Apple...
+      </div>
+
+      <a class="wallet-btn btn-google" id="google-btn" href="#" target="_blank" rel="noopener" style="display:none">
+        💳 &nbsp; أضف إلى Google Wallet
+      </a>
+      <div class="wallet-btn btn-loading" id="google-loading">
+        <div class="spinner"></div>&nbsp; جاري تحضير بطاقة Google...
+      </div>
+    </div>
+
+    <!-- Card page link -->
+    <a class="card-link" id="card-link" href="#">
+      <span>🪪 بطاقتي الرقمية</span>
+      <span class="card-link-url" id="card-link-url"></span>
+    </a>
+
+    <div class="footer-note">
+      احفظ رابط بطاقتك أو أضفها للمحفظة — نقاطك تتحدث تلقائياً 🍫
+    </div>
+  </div>
+</div>
+
+<p style="color:var(--text4);font-size:0.72rem;margin-top:20px;text-align:center">
+  dipndip Libya &nbsp;·&nbsp; جميع الحقوق محفوظة
+</p>
+
+<script>
+const API = '/api/v1';
+let CUSTOMER_ID = null;
+
+// Set max date for birthday (today)
+document.getElementById('birthday').max = new Date().toISOString().split('T')[0];
+
+function showErr(id, msg) {
+  const el = document.getElementById(id);
+  if (msg) { el.textContent = msg; el.style.display = 'block'; }
+  else el.style.display = 'none';
+}
+
+function validate() {
+  let ok = true;
+  const first = document.getElementById('firstName').value.trim();
+  const last  = document.getElementById('lastName').value.trim();
+  const phone = document.getElementById('phone').value.trim();
+
+  showErr('err-first', first.length < 2 ? 'الاسم مطلوب (٢ أحرف على الأقل)' : '');
+  showErr('err-last',  last.length  < 2 ? 'الاسم مطلوب (٢ أحرف على الأقل)' : '');
+  showErr('err-phone', phone.length < 7 ? 'رقم الهاتف مطلوب' : '');
+
+  if (first.length < 2 || last.length < 2 || phone.length < 7) ok = false;
+  return ok;
+}
+
+async function submitForm() {
+  if (!validate()) return;
+  const btn = document.getElementById('submit-btn');
+  const errAlert = document.getElementById('err-alert');
+  errAlert.style.display = 'none';
+  btn.disabled = true;
+  btn.textContent = 'جاري التسجيل...';
+
+  const body = {
+    firstName: document.getElementById('firstName').value.trim(),
+    lastName:  document.getElementById('lastName').value.trim(),
+    phone:     document.getElementById('phone').value.trim(),
+  };
+  const bday = document.getElementById('birthday').value;
+  if (bday) body.birthday = bday;
+
+  try {
+    const res  = await fetch(API + '/customers/self-register', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body),
+    });
+    const data = await res.json();
+    if (!res.ok) {
+      const msg = Array.isArray(data.message) ? data.message.join('، ') : (data.message || 'حدث خطأ');
+      errAlert.textContent = msg;
+      errAlert.style.display = 'block';
+      btn.disabled = false;
+      btn.textContent = 'انضم الآن 🎉';
+      return;
+    }
+    CUSTOMER_ID = data.id;
+    showSuccess(data);
+  } catch(e) {
+    errAlert.textContent = 'تعذّر الاتصال، تحقق من الإنترنت وحاول مجدداً';
+    errAlert.style.display = 'block';
+    btn.disabled = false;
+    btn.textContent = 'انضم الآن 🎉';
+  }
+}
+
+const TIER_LABELS = { BRONZE:'🥉 برونز', SILVER:'🥈 فضي', GOLD:'🥇 ذهبي', PLATINUM:'💎 بلاتيني' };
+
+function showSuccess(d) {
+  document.getElementById('form-section').style.display = 'none';
+  document.getElementById('success-screen').style.display = 'block';
+  document.getElementById('welcome-name').textContent = 'أهلاً ' + d.firstName + '!';
+  document.getElementById('loyalty-id').textContent = d.membershipNumber || d.loyaltyId || d.id.slice(0,12).toUpperCase();
+  document.getElementById('tier-pill').textContent = TIER_LABELS[d.tier] || '🥉 برونز';
+  document.getElementById('points-val').textContent = d.pointsBalance || 0;
+
+  const cardUrl = window.location.origin + '/card/' + d.id;
+  document.getElementById('card-link').href = cardUrl;
+  document.getElementById('card-link-url').textContent = cardUrl;
+
+  // Generate QR code
+  drawQR(d.membershipNumber || d.id, 'qr-area');
+
+  // Load wallet passes
+  loadWallet(d.id);
+}
+
+// ── Minimal QR generator using canvas ──
+function drawQR(text, containerId) {
+  const container = document.getElementById(containerId);
+  // Use QR API image
+  const img = document.createElement('img');
+  const encoded = encodeURIComponent(text);
+  img.src = 'https://api.qrserver.com/v1/create-qr-code/?size=180x180&margin=4&data=' + encoded;
+  img.width = 180; img.height = 180;
+  img.style.display = 'block';
+  img.onerror = function() {
+    // Fallback: show text
+    container.innerHTML = '<div style="width:180px;height:180px;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:8px;color:#1a0a00;font-size:0.7rem;text-align:center;padding:12px"><div style="font-size:2rem">📵</div><div>' + text + '</div></div>';
+  };
+  document.getElementById('qr-placeholder').replaceWith(img);
+}
+
+async function loadWallet(id) {
+  const [appleRes, googleRes] = await Promise.allSettled([
+    fetch(API + '/wallet/apple/' + id + '/pass'),
+    fetch(API + '/wallet/google/' + id + '/save-url'),
+  ]);
+
+  document.getElementById('apple-loading').style.display = 'none';
+  if (appleRes.status === 'fulfilled' && appleRes.value.ok) {
+    const blob = await appleRes.value.blob();
+    const url  = URL.createObjectURL(blob);
+    const btn  = document.getElementById('apple-btn');
+    btn.href   = url;
+    btn.style.display = 'flex';
+  }
+
+  document.getElementById('google-loading').style.display = 'none';
+  if (googleRes.status === 'fulfilled' && googleRes.value.ok) {
+    const data = await googleRes.value.json();
+    const btn  = document.getElementById('google-btn');
+    btn.href   = data.saveUrl || data.url || '#';
+    btn.style.display = 'flex';
+  }
+}
+</script>
+</body>
+</html>
