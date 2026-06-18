@@ -418,7 +418,7 @@ async function doLogin() {
   if (!email || !pass) { errEl.textContent = 'أدخل البريد وكلمة المرور'; return; }
   btn.disabled = true; btn.innerHTML = '<div class="spinner"></div>';
   try {
-    const res = await fetch(API + '/auth/login', {
+    const res = await fetch(API + '/auth/staff/login', {
       method:'POST', headers:{'Content-Type':'application/json'},
       body: JSON.stringify({ email, password: pass })
     });
