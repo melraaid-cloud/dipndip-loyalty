@@ -18,7 +18,7 @@ async function bootstrap() {
   const nodeEnv = configService.get<string>('app.nodeEnv', 'development');
 
   app.use(helmet({
-    contentSecurityPolicy: nodeEnv === 'production',
+    contentSecurityPolicy: false,
     crossOriginEmbedderPolicy: false,
   }));
   app.use(compression());
