@@ -1,0 +1,98 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="theme-color" content="#211914">
+<title>dipndip Morning Club</title>
+<link rel="stylesheet" href="/style.css">
+</head>
+<body>
+<div class="wrap">
+  <div class="topbar">
+    <div class="brand">dipndip</div>
+    <div class="pill">Morning Club · 8–10 AM</div>
+  </div>
+
+  <section class="hero">
+    <div>
+      <div class="eyebrow">dipndip Libya</div>
+      <h1>30 صباح.<br><span>اشتراك واحد.</span></h1>
+      <p class="lead">قهوة مختارة كل يوم من 8:00 إلى 10:00 صباحًا، لمدة 30 يومًا من تاريخ التفعيل. عضوية بسيطة وواضحة — بدون تجميع للأيام.</p>
+      <a class="btn primary" href="#join">انضم إلى Morning Club</a>
+    </div>
+    <div class="price-card">
+      <div style="font-size:13px;color:#bca695">MONTHLY MEMBERSHIP</div>
+      <div class="price">99 <span class="currency">د.ل</span></div>
+      <div class="muted-light">30 يومًا من تاريخ التفعيل</div>
+      <div class="rule"></div>
+      <div class="benefits">
+        <div class="benefit"><strong>كل يوم</strong><span>طوال الأسبوع</span></div>
+        <div class="benefit"><strong>8–10</strong><span>صباحًا فقط</span></div>
+        <div class="benefit"><strong>1 كوب</strong><span>قهوة مختارة يوميًا</span></div>
+      </div>
+    </div>
+  </section>
+
+  <section class="section">
+    <div class="grid2" style="align-items:center">
+      <div>
+        <div class="eyebrow">VALUE EXAMPLE</div>
+        <h2 style="font-size:36px;margin-top:8px">360 د.ل؟ <span style="color:#9b8070;text-decoration:line-through;font-weight:400">أو</span> 99 د.ل.</h2>
+        <p class="sub">مثال: كابتشينو بـ12 د.ل × 30 صباحًا = 360 د.ل. مع Morning Club تدفع 99 د.ل للعضوية.</p>
+      </div>
+      <div class="price-card" style="padding:24px">
+        <div style="font-size:13px;color:#bca695">حتى لو ما جيتش كل يوم</div>
+        <div style="font-size:30px;font-weight:800;margin-top:8px">من الزيارة التاسعة تقريبًا</div>
+        <div class="muted-light" style="margin-top:7px">تبدأ قيمة الاشتراك تتفوق على شراء كابتشينو منفرد يوميًا.</div>
+      </div>
+    </div>
+  </section>
+
+  <section class="section" id="join">
+    <h2>سجّل عضويتك</h2>
+    <p class="sub">بعد التسجيل تظهر لك بطاقة Morning Club الرقمية. يتم تفعيلها في الفرع بعد دفع 99 د.ل.</p>
+    <div class="notice error" id="err"></div>
+    <div class="notice ok" id="ok"></div>
+    <form id="joinForm">
+      <div class="grid2">
+        <div class="field"><label>الاسم الأول</label><input id="firstName" required minlength="2" autocomplete="given-name"></div>
+        <div class="field"><label>الاسم الأخير</label><input id="lastName" required minlength="2" autocomplete="family-name"></div>
+      </div>
+      <div class="field"><label>رقم الهاتف</label><input id="phone" required minlength="7" inputmode="tel" autocomplete="tel" placeholder="0912345678"></div>
+      <button class="btn primary full" id="submitBtn">إنشاء عضوية Morning Club</button>
+    </form>
+    <div id="success" style="display:none;margin-top:18px">
+      <div class="notice ok show">تم إنشاء البطاقة. التفعيل يتم في الفرع بعد الدفع.</div>
+      <a class="btn primary full" id="cardBtn">فتح بطاقتي الرقمية</a>
+    </div>
+  </section>
+
+  <section class="section">
+    <h2>قواعد بسيطة</h2>
+    <div class="grid2">
+      <p class="sub"><strong>كوب واحد يوميًا.</strong><br>الاستحقاق يعمل مرة واحدة فقط على مستوى جميع الفروع.</p>
+      <p class="sub"><strong>لا يوجد rollover.</strong><br>إذا لم تستخدم قهوتك اليوم، لا تنتقل لليوم التالي.</p>
+      <p class="sub"><strong>عضوية شخصية.</strong><br>QR مرتبط بعضويتك ولا يمكن استخدامه مرتين في نفس اليوم.</p>
+      <p class="sub"><strong>30 يومًا كاملة.</strong><br>تبدأ المدة من لحظة التفعيل، وليس من بداية الشهر.</p>
+    </div>
+  </section>
+  <div class="footer">dipndip Libya · Morning Club</div>
+</div>
+
+<script>
+const $=id=>document.getElementById(id);
+function note(id,msg){const el=$(id);el.textContent=msg;el.classList.add('show')}
+$('joinForm').addEventListener('submit',async e=>{
+  e.preventDefault(); $('err').classList.remove('show'); $('ok').classList.remove('show');
+  const btn=$('submitBtn'); btn.disabled=true; btn.textContent='جاري إنشاء العضوية...';
+  try{
+    const r=await fetch('/api/public/register',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({
+      firstName:$('firstName').value.trim(),lastName:$('lastName').value.trim(),phone:$('phone').value.trim()
+    })});
+    const d=await r.json(); if(!r.ok) throw new Error(d.error||'تعذر التسجيل');
+    $('joinForm').style.display='none'; $('success').style.display='block';
+    $('cardBtn').href='/card.html?t='+encodeURIComponent(d.token);
+  }catch(err){note('err','تعذر التسجيل. تأكد من البيانات وحاول مرة أخرى.');btn.disabled=false;btn.textContent='إنشاء عضوية Morning Club'}
+});
+</script>
+</body></html>
