@@ -1,0 +1,101 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="theme-color" content="#211914"><title>Morning Club Dashboard · dipndip</title>
+<link rel="stylesheet" href="/style.css">
+</head>
+<body>
+<div class="appbar"><div class="wrap"><div class="brand small">dipndip</div><div>Morning Club · Dashboard</div></div></div>
+<div class="wrap">
+  <div class="login-card" id="loginBox">
+    <div class="brand small">dipndip</div><h2>دخول الإدارة</h2>
+    <div class="notice error" id="loginErr"></div>
+    <form id="loginForm">
+      <div class="field"><label>البريد الإلكتروني</label><input id="email" type="email" required></div>
+      <div class="field"><label>كلمة المرور</label><input id="password" type="password" required></div>
+      <button class="btn primary full">دخول</button>
+    </form>
+  </div>
+
+  <div id="app" style="display:none">
+    <div class="topbar">
+      <div><h2 style="margin:0">لوحة Morning Club</h2><div class="sub" id="ruleLine">—</div></div>
+      <div style="display:flex;gap:8px"><a class="btn light" href="/api/admin/export.csv">تصدير CSV</a><button class="btn primary" id="refresh">تحديث</button></div>
+    </div>
+
+    <div class="kpis">
+      <div class="kpi"><label>Active Members</label><strong id="active">0</strong><span class="sub" id="pending"></span></div>
+      <div class="kpi"><label>Revenue · 30d</label><strong id="revenue">0</strong><span class="sub">د.ل</span></div>
+      <div class="kpi"><label>Redemptions · 30d</label><strong id="redemptions">0</strong><span class="sub" id="today"></span></div>
+      <div class="kpi"><label>Food Attach Rate</label><strong id="attach">0%</strong><span class="sub">زيارات بها مشتريات إضافية</span></div>
+    </div>
+
+    <div class="section">
+      <div class="grid2">
+        <div>
+          <h3 style="margin-top:0">الاستخدام آخر 30 يومًا</h3>
+          <div class="chart" id="chart"></div>
+        </div>
+        <div>
+          <h3 style="margin-top:0">جودة الزيارة</h3>
+          <div class="grid2">
+            <div class="kpi"><label>Avg visits/member</label><strong id="avgVisits">0</strong></div>
+            <div class="kpi"><label>Avg extra spend</label><strong id="avgSpend">0</strong><span class="sub">د.ل</span></div>
+          </div>
+          <div class="sub" style="margin-top:15px">إجمالي المشتريات الإضافية المرتبطة بزيارات Morning Club خلال 30 يومًا: <strong id="extraSpend">0 د.ل</strong></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="section">
+      <div style="display:flex;justify-content:space-between;gap:12px;align-items:center">
+        <div><h3 style="margin:0">الأعضاء</h3><div class="sub">بحث بالاسم أو الهاتف أو رقم العضوية</div></div>
+        <div class="field" style="margin:0;min-width:260px"><input id="search" placeholder="بحث..."></div>
+      </div>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>العضو</th><th>الهاتف</th><th>رقم العضوية</th><th>الحالة</th><th>الانتهاء</th><th>الزيارات</th><th>إنفاق إضافي</th></tr></thead>
+          <tbody id="rows"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+<script>
+const $=id=>document.getElementById(id);
+async function login(email,password){
+ const r=await fetch('/api/auth/login',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({email,password})});
+ return r.ok;
+}
+$('loginForm').addEventListener('submit',async e=>{e.preventDefault();$('loginErr').classList.remove('show');
+ if(await login($('email').value,$('password').value)){showApp()}else{$('loginErr').textContent='بيانات الدخول غير صحيحة';$('loginErr').classList.add('show')}
+});
+async function showApp(){
+ const me=await fetch('/api/auth/me');if(!me.ok)return;
+ const m=await me.json();if(!['super_admin','admin','manager'].includes(m.staff.role)){location.href='/staff';return}
+ $('loginBox').style.display='none';$('app').style.display='block';load();
+}
+async function load(){
+ const r=await fetch('/api/admin/dashboard');if(!r.ok)return;const d=await r.json();
+ $('active').textContent=d.members.active;$('pending').textContent=d.members.pending+' pending';
+ $('revenue').textContent=Number(d.revenue30d).toLocaleString();$('redemptions').textContent=d.redemptions.last30;$('today').textContent=d.redemptions.today+' today';
+ $('attach').textContent=d.foodAttachRate30d+'%';$('avgVisits').textContent=d.avgVisitsPerMember30d;
+ $('avgSpend').textContent=Number(d.avgAdditionalSpend30d).toFixed(1);$('extraSpend').textContent=Number(d.additionalSpend30d).toLocaleString()+' د.ل';
+ $('ruleLine').textContent=`${d.rules.priceLyd} د.ل · ${d.rules.days} يوم · كل يوم ${d.rules.start}–${d.rules.end}`;
+ const chart=$('chart');chart.innerHTML='';const vals=d.dailyRedemptions||[],max=Math.max(1,...vals.map(x=>x.count));
+ const map=new Map(vals.map(x=>[x.day,Number(x.count)]));for(let i=29;i>=0;i--){const day=new Date();day.setDate(day.getDate()-i);const k=day.toISOString().slice(0,10),v=map.get(k)||0;
+   const b=document.createElement('div');b.className='bar';b.style.height=Math.max(3,v/max*110)+'px';b.title=k+': '+v;chart.appendChild(b)}
+ await loadMembers();
+}
+async function loadMembers(){
+ const s=$('search').value.trim(),r=await fetch('/api/admin/members?search='+encodeURIComponent(s));if(!r.ok)return;const xs=await r.json();
+ $('rows').innerHTML=xs.map(x=>`<tr><td><strong>${esc(x.first_name)} ${esc(x.last_name)}</strong></td><td>${esc(x.phone)}</td><td>${esc(x.membership_number)}</td>
+ <td><span class="tag ${x.status}">${x.status}</span></td><td>${x.ends_at?new Intl.DateTimeFormat('en-GB',{dateStyle:'medium'}).format(new Date(x.ends_at)):'—'}</td>
+ <td>${x.redemptions}</td><td>${Number(x.additional_spend||0).toFixed(1)} د.ل</td></tr>`).join('')||'<tr><td colspan="7">لا توجد نتائج</td></tr>';
+}
+function esc(v){return String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}
+let timer;$('search').addEventListener('input',()=>{clearTimeout(timer);timer=setTimeout(loadMembers,300)});$('refresh').onclick=load;
+fetch('/api/auth/me').then(r=>{if(r.ok)showApp()});
+</script>
+</body></html>
