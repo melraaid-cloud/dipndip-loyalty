@@ -21,7 +21,12 @@
   <div id="app" style="display:none">
     <div class="topbar">
       <div><h2 style="margin:0">لوحة Morning Club</h2><div class="sub" id="ruleLine">—</div></div>
-      <div style="display:flex;gap:8px"><a class="btn light" href="/api/admin/export.csv">تصدير CSV</a><button class="btn primary" id="refresh">تحديث</button></div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap">
+        <a class="btn light" href="/staff">شاشة الكاشير</a>
+        <a class="btn light" href="/api/admin/export.csv">تصدير CSV</a>
+        <button class="btn primary" id="refresh">تحديث</button>
+        <button class="btn light" id="logout">خروج</button>
+      </div>
     </div>
 
     <div class="kpis">
@@ -33,10 +38,7 @@
 
     <div class="section">
       <div class="grid2">
-        <div>
-          <h3 style="margin-top:0">الاستخدام آخر 30 يومًا</h3>
-          <div class="chart" id="chart"></div>
-        </div>
+        <div><h3 style="margin-top:0">الاستخدام آخر 30 يومًا</h3><div class="chart" id="chart"></div></div>
         <div>
           <h3 style="margin-top:0">جودة الزيارة</h3>
           <div class="grid2">
@@ -49,32 +51,52 @@
     </div>
 
     <div class="section">
-      <div style="display:flex;justify-content:space-between;gap:12px;align-items:center">
+      <div style="display:flex;justify-content:space-between;gap:12px;align-items:center;flex-wrap:wrap">
         <div><h3 style="margin:0">الأعضاء</h3><div class="sub">بحث بالاسم أو الهاتف أو رقم العضوية</div></div>
         <div class="field" style="margin:0;min-width:260px"><input id="search" placeholder="بحث..."></div>
       </div>
-      <div class="table-wrap">
-        <table>
-          <thead><tr><th>العضو</th><th>الهاتف</th><th>رقم العضوية</th><th>الحالة</th><th>الانتهاء</th><th>الزيارات</th><th>إنفاق إضافي</th></tr></thead>
-          <tbody id="rows"></tbody>
-        </table>
-      </div>
+      <div class="table-wrap"><table>
+        <thead><tr><th>العضو</th><th>الهاتف</th><th>رقم العضوية</th><th>الحالة</th><th>الانتهاء</th><th>الزيارات</th><th>إنفاق إضافي</th></tr></thead>
+        <tbody id="rows"></tbody>
+      </table></div>
+    </div>
+
+    <div class="section" id="staffSection" style="display:none">
+      <h3 style="margin-top:0">حسابات الموظفين</h3>
+      <p class="sub">أنشئ حسابًا مستقلًا لكل مدير أو كاشير بدل مشاركة كلمة مرور الإدارة.</p>
+      <div class="notice error" id="staffErr"></div><div class="notice ok" id="staffOk"></div>
+      <form id="staffForm">
+        <div class="grid2">
+          <div class="field"><label>الاسم</label><input id="sName" required></div>
+          <div class="field"><label>البريد</label><input id="sEmail" type="email" required></div>
+          <div class="field"><label>كلمة المرور (10 أحرف على الأقل)</label><input id="sPass" type="password" minlength="10" required></div>
+          <div class="field"><label>الصلاحية</label><select id="sRole"><option value="cashier">Cashier</option><option value="manager">Manager</option><option value="admin">Admin</option></select></div>
+        </div>
+        <div class="field"><label>الفروع</label>
+          <select id="sBranch"><option value="">كل الفروع</option><option value="hay-al-andalus">حي الأندلس</option><option value="misrata">مصراتة</option></select>
+        </div>
+        <button class="btn primary">إنشاء الحساب</button>
+      </form>
+      <div class="table-wrap"><table>
+        <thead><tr><th>الاسم</th><th>البريد</th><th>الدور</th><th>الفروع</th><th>آخر دخول</th><th>الحالة</th></tr></thead>
+        <tbody id="staffRows"></tbody>
+      </table></div>
     </div>
   </div>
 </div>
 <script>
-const $=id=>document.getElementById(id);
-async function login(email,password){
- const r=await fetch('/api/auth/login',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({email,password})});
- return r.ok;
-}
+const $=id=>document.getElementById(id);let currentRole='';
+function esc(v){return String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}
+async function login(email,password){const r=await fetch('/api/auth/login',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({email,password})});return r.ok}
 $('loginForm').addEventListener('submit',async e=>{e.preventDefault();$('loginErr').classList.remove('show');
- if(await login($('email').value,$('password').value)){showApp()}else{$('loginErr').textContent='بيانات الدخول غير صحيحة';$('loginErr').classList.add('show')}
+ if(await login($('email').value,$('password').value))showApp();else{$('loginErr').textContent='بيانات الدخول غير صحيحة';$('loginErr').classList.add('show')}
 });
 async function showApp(){
- const me=await fetch('/api/auth/me');if(!me.ok)return;
- const m=await me.json();if(!['super_admin','admin','manager'].includes(m.staff.role)){location.href='/staff';return}
- $('loginBox').style.display='none';$('app').style.display='block';load();
+ const me=await fetch('/api/auth/me');if(!me.ok)return;const m=await me.json();currentRole=m.staff.role;
+ if(!['super_admin','admin','manager'].includes(currentRole)){location.href='/staff';return}
+ $('loginBox').style.display='none';$('app').style.display='block';
+ if(['super_admin','admin'].includes(currentRole)){$('staffSection').style.display='block';loadStaff()}
+ load();
 }
 async function load(){
  const r=await fetch('/api/admin/dashboard');if(!r.ok)return;const d=await r.json();
@@ -83,9 +105,8 @@ async function load(){
  $('attach').textContent=d.foodAttachRate30d+'%';$('avgVisits').textContent=d.avgVisitsPerMember30d;
  $('avgSpend').textContent=Number(d.avgAdditionalSpend30d).toFixed(1);$('extraSpend').textContent=Number(d.additionalSpend30d).toLocaleString()+' د.ل';
  $('ruleLine').textContent=`${d.rules.priceLyd} د.ل · ${d.rules.days} يوم · كل يوم ${d.rules.start}–${d.rules.end}`;
- const chart=$('chart');chart.innerHTML='';const vals=d.dailyRedemptions||[],max=Math.max(1,...vals.map(x=>x.count));
- const map=new Map(vals.map(x=>[x.day,Number(x.count)]));for(let i=29;i>=0;i--){const day=new Date();day.setDate(day.getDate()-i);const k=day.toISOString().slice(0,10),v=map.get(k)||0;
-   const b=document.createElement('div');b.className='bar';b.style.height=Math.max(3,v/max*110)+'px';b.title=k+': '+v;chart.appendChild(b)}
+ const chart=$('chart');chart.innerHTML='';const vals=d.dailyRedemptions||[],max=Math.max(1,...vals.map(x=>x.count)),map=new Map(vals.map(x=>[x.day,Number(x.count)]));
+ for(let i=29;i>=0;i--){const day=new Date();day.setDate(day.getDate()-i);const k=day.toISOString().slice(0,10),v=map.get(k)||0,b=document.createElement('div');b.className='bar';b.style.height=Math.max(3,v/max*110)+'px';b.title=k+': '+v;chart.appendChild(b)}
  await loadMembers();
 }
 async function loadMembers(){
@@ -94,8 +115,22 @@ async function loadMembers(){
  <td><span class="tag ${x.status}">${x.status}</span></td><td>${x.ends_at?new Intl.DateTimeFormat('en-GB',{dateStyle:'medium'}).format(new Date(x.ends_at)):'—'}</td>
  <td>${x.redemptions}</td><td>${Number(x.additional_spend||0).toFixed(1)} د.ل</td></tr>`).join('')||'<tr><td colspan="7">لا توجد نتائج</td></tr>';
 }
-function esc(v){return String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}
-let timer;$('search').addEventListener('input',()=>{clearTimeout(timer);timer=setTimeout(loadMembers,300)});$('refresh').onclick=load;
+async function loadStaff(){
+ const r=await fetch('/api/admin/staff');if(!r.ok)return;const xs=await r.json();
+ $('staffRows').innerHTML=xs.map(x=>`<tr><td>${esc(x.name)}</td><td>${esc(x.email)}</td><td>${esc(x.role)}</td><td>${esc((x.branch_codes||[]).join(', ')||'all')}</td>
+ <td>${x.last_login_at?new Intl.DateTimeFormat('en-GB',{dateStyle:'medium'}).format(new Date(x.last_login_at)):'—'}</td><td>${x.active?'Active':'Disabled'}</td></tr>`).join('');
+}
+$('staffForm').addEventListener('submit',async e=>{
+ e.preventDefault();$('staffErr').classList.remove('show');$('staffOk').classList.remove('show');
+ const b=$('sBranch').value,r=await fetch('/api/admin/staff',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({
+  name:$('sName').value.trim(),email:$('sEmail').value.trim(),password:$('sPass').value,role:$('sRole').value,branchCodes:b?[b]:[]
+ })});
+ if(!r.ok){$('staffErr').textContent='تعذر إنشاء الحساب. تأكد من البريد وكلمة المرور.';$('staffErr').classList.add('show');return}
+ $('staffOk').textContent='تم إنشاء حساب الموظف.';$('staffOk').classList.add('show');$('staffForm').reset();loadStaff();
+});
+let timer;$('search').addEventListener('input',()=>{clearTimeout(timer);timer=setTimeout(loadMembers,300)});
+$('refresh').onclick=()=>{load();if(['super_admin','admin'].includes(currentRole))loadStaff()};
+$('logout').onclick=async()=>{await fetch('/api/auth/logout',{method:'POST'});location.reload()};
 fetch('/api/auth/me').then(r=>{if(r.ok)showApp()});
 </script>
 </body></html>
