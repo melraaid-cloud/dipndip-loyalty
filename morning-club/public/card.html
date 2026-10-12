@@ -1,0 +1,74 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="theme-color" content="#211914">
+<title>Morning Club Card · dipndip</title>
+<link rel="stylesheet" href="/style.css">
+</head>
+<body>
+<div class="wrap card-shell">
+  <div class="topbar"><div class="brand">dipndip</div><a class="pill" href="/">Morning Club</a></div>
+
+  <div class="member-card">
+    <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:12px">
+      <div>
+        <div class="brand small" style="color:#f4eee7">dipndip</div>
+        <div class="title">Morning<br>Club</div>
+      </div>
+      <span class="status pending" id="status">LOADING</span>
+    </div>
+
+    <div style="font-size:20px;font-weight:700;margin-top:18px" id="name">—</div>
+    <div style="font-size:12px;color:#bda795;margin-top:4px" id="number">—</div>
+
+    <div class="mini-grid">
+      <div class="mini"><label>DAILY WINDOW</label><strong id="window">8:00–10:00</strong></div>
+      <div class="mini"><label>VALID UNTIL</label><strong id="valid">—</strong></div>
+    </div>
+    <div class="today closed" id="today">جاري التحقق...</div>
+  </div>
+
+  <div class="qr-box">
+    <img id="qr" alt="Morning Club QR">
+    <div style="font-size:12px;color:#806655;margin-top:8px">اعرض هذا الرمز للكاشير</div>
+  </div>
+
+  <div class="wallets">
+    <a class="wallet disabled" id="apple"> Add to Apple Wallet</a>
+    <a class="wallet google disabled" id="google">Add to Google Wallet</a>
+  </div>
+
+  <div class="section" style="padding:20px">
+    <strong>قواعد العضوية</strong>
+    <p class="sub" style="font-size:14px;margin-bottom:0">قهوة مختارة واحدة يوميًا · كل يوم · من 8 إلى 10 صباحًا · لا يتراكم الاستحقاق · العضوية شخصية وغير قابلة للتحويل.</p>
+  </div>
+  <div class="notice error" id="err"></div>
+  <div class="footer">dipndip Libya · Morning Club</div>
+</div>
+<script>
+const p=new URLSearchParams(location.search),token=p.get('t');
+const $=id=>document.getElementById(id);
+function dt(v){if(!v)return 'بانتظار التفعيل';return new Intl.DateTimeFormat('en-GB',{day:'2-digit',month:'short',year:'numeric'}).format(new Date(v))}
+async function load(){
+  if(!token){$('err').textContent='رابط البطاقة غير صحيح';$('err').classList.add('show');return}
+  try{
+    const [r,c]=await Promise.all([fetch('/api/public/card/'+encodeURIComponent(token)),fetch('/api/public/config')]);
+    const d=await r.json(),cfg=await c.json(); if(!r.ok)throw new Error();
+    $('name').textContent=d.name;$('number').textContent=d.membershipNumber;$('window').textContent=d.dailyWindow;$('valid').textContent=dt(d.endsAt);
+    $('status').textContent=d.status.toUpperCase();$('status').className='status '+d.status;
+    $('qr').src='/api/public/qr/'+encodeURIComponent(token)+'.png';
+    const t=$('today');
+    if(d.redeemedToday){t.className='today used';t.textContent='✓ تم استخدام قهوة اليوم'}
+    else if(d.availableToday){t.className='today available';t.textContent='قهوة اليوم متاحة الآن ☕'}
+    else if(d.status!=='active'){t.className='today closed';t.textContent=d.status==='pending'?'بانتظار التفعيل في الفرع':'العضوية غير فعالة'}
+    else {t.className='today closed';t.textContent='الاستحقاق اليومي متاح من 8:00 إلى 10:00 صباحًا'}
+    if(cfg.appleWalletConfigured){$('apple').classList.remove('disabled');$('apple').href='/wallet/apple/'+encodeURIComponent(token)+'.pkpass'}
+    if(cfg.googleWalletConfigured){$('google').classList.remove('disabled');$('google').onclick=async e=>{
+      e.preventDefault();const x=await fetch('/wallet/google/'+encodeURIComponent(token));const j=await x.json();if(j.url)location.href=j.url;
+    }}
+  }catch{$('err').textContent='تعذر تحميل البطاقة';$('err').classList.add('show')}
+}
+load(); setInterval(load,60000);
+</script>
+</body></html>
