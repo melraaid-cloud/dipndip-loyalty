@@ -1,0 +1,123 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="theme-color" content="#211914"><title>Morning Club Staff · dipndip</title>
+<link rel="stylesheet" href="/style.css">
+</head>
+<body>
+<div class="appbar"><div class="wrap"><div class="brand small">dipndip</div><div>Morning Club · Staff</div></div></div>
+
+<div class="wrap">
+  <div class="login-card" id="loginBox">
+    <div class="brand small">dipndip</div>
+    <h2>دخول الموظف</h2>
+    <div class="notice error" id="loginErr"></div>
+    <form id="loginForm">
+      <div class="field"><label>البريد الإلكتروني</label><input id="email" type="email" required autocomplete="username"></div>
+      <div class="field"><label>كلمة المرور</label><input id="password" type="password" required autocomplete="current-password"></div>
+      <button class="btn primary full">دخول</button>
+    </form>
+  </div>
+
+  <div id="app" style="display:none">
+    <div class="staff-grid">
+      <div class="panel">
+        <h3 style="margin-top:0">قراءة العضوية</h3>
+        <p class="sub" style="font-size:13px">امسح QR أو أدخل رقم العضوية يدويًا.</p>
+        <div class="scanner">
+          <video id="video" playsinline></video>
+          <button class="btn light full" id="scanBtn" type="button">تشغيل الكاميرا لمسح QR</button>
+        </div>
+        <div class="field"><label>QR / رقم العضوية</label><input id="code" autocomplete="off" placeholder="MC2601... أو امسح QR"></div>
+        <button class="btn primary full" id="lookupBtn">تحقق</button>
+        <div class="notice error" id="opErr"></div>
+        <div class="notice ok" id="opOk"></div>
+      </div>
+
+      <div class="panel lookup-result" id="result">
+        <div style="display:flex;justify-content:space-between;gap:10px;align-items:flex-start">
+          <div><div class="sub" id="memberNo">—</div><div class="big-state" id="memberName">—</div></div>
+          <span class="status pending" id="memberStatus">—</span>
+        </div>
+        <div class="today closed" id="todayState">—</div>
+        <div class="grid2">
+          <div class="field"><label>الفرع</label>
+            <select id="branch"><option value="hay-al-andalus">حي الأندلس</option><option value="misrata">مصراتة</option></select>
+          </div>
+          <div class="field"><label>رقم الفاتورة (اختياري)</label><input id="receipt" placeholder="POS receipt"></div>
+        </div>
+        <div class="field"><label>مشتريات إضافية مع القهوة (د.ل) — لقياس Food Attach</label><input id="spend" type="number" min="0" step="0.001" value="0"></div>
+
+        <div id="pendingActions" style="display:none">
+          <div class="grid2">
+            <div class="field"><label>طريقة الدفع</label><select id="payment"><option value="cash">نقدي</option><option value="card">بطاقة</option><option value="bank">تحويل/مصرفي</option></select></div>
+            <div class="field"><label>القيمة</label><input value="99 د.ل" disabled></div>
+          </div>
+          <button class="btn green full" id="activateBtn">تأكيد الدفع وتفعيل 30 يومًا</button>
+        </div>
+
+        <div id="activeActions" style="display:none;gap:10px;flex-wrap:wrap;margin-top:10px">
+          <button class="btn green" id="redeemBtn" style="flex:1">صرف قهوة اليوم ☕</button>
+          <button class="btn light" id="renewBtn" style="flex:1">تجديد 30 يومًا</button>
+        </div>
+        <div class="sub" style="font-size:12px;margin-top:13px" id="validity"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+const $=id=>document.getElementById(id);let current=null,scannerStream=null,scanTimer=null;
+function show(id,msg){const el=$(id);el.textContent=msg;el.classList.add('show')}
+function clearNotes(){['loginErr','opErr','opOk'].forEach(x=>$(x).classList.remove('show'))}
+async function checkSession(){
+  const r=await fetch('/api/auth/me');if(r.ok){$('loginBox').style.display='none';$('app').style.display='block'}
+}
+$('loginForm').addEventListener('submit',async e=>{
+  e.preventDefault();clearNotes();
+  const r=await fetch('/api/auth/login',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({email:$('email').value,password:$('password').value})});
+  if(!r.ok)return show('loginErr','بيانات الدخول غير صحيحة');
+  $('loginBox').style.display='none';$('app').style.display='block';
+});
+async function lookup(){
+  clearNotes();const code=$('code').value.trim();if(!code)return;
+  const r=await fetch('/api/staff/membership/'+encodeURIComponent(code));const d=await r.json();
+  if(!r.ok){$('result').classList.remove('show');return show('opErr','العضوية غير موجودة')}
+  current=d;$('result').classList.add('show');$('memberNo').textContent=d.membershipNumber;$('memberName').textContent=d.name;
+  $('memberStatus').textContent=d.status.toUpperCase();$('memberStatus').className='status '+d.status;
+  $('validity').textContent=d.endsAt?'صالحة حتى '+new Intl.DateTimeFormat('en-GB',{dateStyle:'medium'}).format(new Date(d.endsAt)):'بانتظار التفعيل';
+  const t=$('todayState');
+  if(d.redeemedToday){t.className='today used';t.textContent='تم استخدام قهوة اليوم ✓'}
+  else if(d.availableToday){t.className='today available';t.textContent='قهوة اليوم متاحة للصرف الآن'}
+  else if(d.status==='active'){t.className='today closed';t.textContent='خارج وقت Morning Club — 8:00 إلى 10:00'}
+  else {t.className='today closed';t.textContent=d.status==='pending'?'بانتظار دفع 99 د.ل والتفعيل':'العضوية غير فعالة'}
+  $('pendingActions').style.display=d.status==='pending'?'block':'none';
+  $('activeActions').style.display=d.status==='active'?'flex':'none';
+  $('redeemBtn').disabled=!d.availableToday;
+}
+$('lookupBtn').onclick=lookup;$('code').addEventListener('keydown',e=>{if(e.key==='Enter')lookup()});
+async function post(url,extra={}){
+  clearNotes();if(!current)return;
+  const body={code:current.token,branchCode:$('branch').value,receiptNumber:$('receipt').value.trim(),...extra};
+  const r=await fetch(url,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});const d=await r.json();
+  if(!r.ok){show('opErr',d.message||d.error||'تعذر تنفيذ العملية');return false}
+  show('opOk','تمت العملية بنجاح');await lookup();return true;
+}
+$('activateBtn').onclick=()=>post('/api/staff/activate',{paymentMethod:$('payment').value});
+$('renewBtn').onclick=()=>post('/api/staff/renew',{paymentMethod:$('payment').value});
+$('redeemBtn').onclick=()=>post('/api/staff/redeem',{spendAmount:Number($('spend').value||0)});
+
+$('scanBtn').onclick=async()=>{
+  clearNotes();
+  if(!('BarcodeDetector'in window)||!navigator.mediaDevices?.getUserMedia)return show('opErr','المسح بالكاميرا غير مدعوم هنا. استخدم حقل QR أو ماسح باركود.');
+  try{
+    scannerStream=await navigator.mediaDevices.getUserMedia({video:{facingMode:'environment'}});
+    const v=$('video');v.srcObject=scannerStream;v.style.display='block';await v.play();$('scanBtn').style.display='none';
+    const det=new BarcodeDetector({formats:['qr_code']});
+    scanTimer=setInterval(async()=>{try{const xs=await det.detect(v);if(xs.length){$('code').value=xs[0].rawValue;clearInterval(scanTimer);scannerStream.getTracks().forEach(t=>t.stop());v.style.display='none';$('scanBtn').style.display='block';lookup()}}catch{}},350);
+  }catch{show('opErr','تعذر فتح الكاميرا')}
+};
+checkSession();
+</script>
+</body></html>
