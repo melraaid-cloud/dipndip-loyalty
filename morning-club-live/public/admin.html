@@ -2,24 +2,69 @@
 
 <section id="setupBox" class="card hidden"><h2>تهيئة الإدارة لأول مرة</h2><p class="muted">أنشئ حساب الإدارة الرئيسي. يمكنك استخدام أي بريد صحيح مثل social@dipndip.ly. هذه الشاشة تختفي بعد إنشاء أول حساب.</p><form method="post" action="/setup-admin" class="grid"><div><label>الاسم</label><input name="name" value="dipndip Morning Club Admin" required minlength="2"></div><div><label>البريد الإلكتروني</label><input name="email" type="email" value="social@dipndip.ly" required></div><div><label>كلمة مرور قوية</label><input name="password" type="password" minlength="10" required autocomplete="new-password"></div><button type="submit">إنشاء حساب الإدارة</button><div id="setupMsg" class="alert"></div></form></section>
 
-<section id="loginBox" class="card hidden"><h2>دخول الإدارة</h2><div class="g2 grid"><div><label>البريد</label><input id="email" type="email"></div><div><label>كلمة المرور</label><input id="password" type="password"></div></div><button style="margin-top:14px" onclick="login()">دخول</button><div id="loginMsg" class="alert"></div></section>
+<section id="loginBox" class="card hidden"><h2>دخول الإدارة</h2><div class="g2 grid"><div><label>البريد</label><input id="email" type="email"></div><div><label>كلمة المرور</label><input id="password" type="password"></div></div><button style="margin-top:14px" id="loginBtn" onclick="login()">دخول</button><div id="loginMsg" class="alert"></div></section>
 
-<section id="appBox" class="hidden"><div class="g4 grid"><div class="metric"><span class="muted">الأعضاء الفعالون</span><b id="active">0</b></div><div class="metric"><span class="muted">استخدامات اليوم</span><b id="todayRed">0</b></div><div class="metric"><span class="muted">إيراد الاشتراكات 30 يوم</span><b id="revenue">0</b></div><div class="metric"><span class="muted">Food Attach Rate</span><b id="attach">0%</b></div></div><div class="g2 grid" style="margin-top:14px"><div class="metric"><span class="muted">مشتريات إضافية 30 يوم</span><b id="extra">0</b></div><div class="metric"><span class="muted">عمليات التجديد/التفعيل 30 يوم</span><b id="payments">0</b></div></div><section class="card"><div class="row" style="justify-content:space-between"><div><h2 style="margin:0">الأعضاء</h2><div class="small muted">البيانات التشغيلية للـ Morning Club</div></div><a class="btn light" href="/api/admin/export.csv">CSV</a></div><div class="row" style="margin:14px 0"><input id="search" placeholder="ابحث بالاسم أو الهاتف أو رقم العضوية" style="flex:1;min-width:230px"><button onclick="members()">بحث</button></div><div style="overflow:auto"><table><thead><tr><th>العضو</th><th>الهاتف</th><th>الحالة</th><th>الصلاحية</th><th>الاستخدامات</th><th>إنفاق إضافي</th></tr></thead><tbody id="tbody"></tbody></table></div></section></section></main>
+<section id="appBox" class="hidden"><div id="dashboardMsg" class="alert"></div><div class="g4 grid"><div class="metric"><span class="muted">الأعضاء الفعالون</span><b id="active">0</b></div><div class="metric"><span class="muted">استخدامات اليوم</span><b id="todayRed">0</b></div><div class="metric"><span class="muted">إيراد الاشتراكات 30 يوم</span><b id="revenue">0</b></div><div class="metric"><span class="muted">Food Attach Rate</span><b id="attach">0%</b></div></div><div class="g2 grid" style="margin-top:14px"><div class="metric"><span class="muted">مشتريات إضافية 30 يوم</span><b id="extra">0</b></div><div class="metric"><span class="muted">عمليات التجديد/التفعيل 30 يوم</span><b id="payments">0</b></div></div><section class="card"><div class="row" style="justify-content:space-between"><div><h2 style="margin:0">الأعضاء</h2><div class="small muted">البيانات التشغيلية للـ Morning Club</div></div><a class="btn light" href="/api/admin/export.csv">CSV</a></div><div class="row" style="margin:14px 0"><input id="search" placeholder="ابحث بالاسم أو الهاتف أو رقم العضوية" style="flex:1;min-width:230px"><button onclick="members()">بحث</button></div><div style="overflow:auto"><table><thead><tr><th>العضو</th><th>الهاتف</th><th>الحالة</th><th>الصلاحية</th><th>الاستخدامات</th><th>إنفاق إضافي</th></tr></thead><tbody id="tbody"></tbody></table></div></section></section></main>
 
 <script>
-async function api(u,o){var r=await fetch(u,o);var d=await r.json().catch(function(){return{}});if(!r.ok)throw new Error(d.error||'خطأ');return d}
-async function boot(){try{var s=await api('/api/setup/status');if(!s.configured){setupBox.classList.remove('hidden');return}try{await api('/api/auth/me');appBox.classList.remove('hidden');logoutBtn.classList.remove('hidden');await refresh()}catch(e){loginBox.classList.remove('hidden')}}catch(e){loginBox.classList.remove('hidden')}}
-function showSetupResult(){
-  var p=new URLSearchParams(location.search);
-  var msg=document.getElementById('setupMsg');
-  if(p.get('created')==='1'){msg.textContent='تم إنشاء الحساب. جاري فتح شاشة تسجيل الدخول...';msg.className='alert ok';setTimeout(function(){location.href='/admin'},700)}
-  var e=p.get('error');
-  if(e){msg.textContent=e==='invalid_password'?'السيرفر استلم كلمة مرور أقصر من 10 أحرف أو لم يستلمها. اكتبها يدويًا داخل الحقل ثم أعد المحاولة.':e==='invalid_email'?'البريد الإلكتروني غير صالح.':e==='invalid_name'?'الاسم غير صالح.':e==='invalid_setup_data'?'تحقق من بيانات الحساب.':e==='already_configured'?'تم إنشاء حساب الإدارة مسبقًا.':'تعذر إنشاء الحساب، حاول مرة أخرى.';msg.className='alert bad'}
+const el=id=>document.getElementById(id);
+async function api(u,o){const r=await fetch(u,Object.assign({credentials:'same-origin'},o||{}));const d=await r.json().catch(()=>({}));if(!r.ok)throw new Error(d.error||'request_failed');return d}
+function alertAt(id,msg){const n=el(id);n.textContent=msg;n.className='alert bad'}
+async function boot(){
+try{
+const s=await api('/api/setup/status');
+el('setupBox').classList.toggle('hidden',!!s.configured);
+if(!s.configured)return;
+try{
+const me=await api('/api/auth/me');
+el('appBox').classList.remove('hidden');
+el('logoutBtn').classList.remove('hidden');
+el('loginBox').classList.add('hidden');
+await refresh();
+}catch(e){
+el('loginBox').classList.remove('hidden');
+el('appBox').classList.add('hidden');
 }
-async function login(){var em=document.getElementById('email').value.trim();var pw=document.getElementById('password').value;var msg=document.getElementById('loginMsg');try{await api('/api/auth/login',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({email:em,password:pw})});location.reload()}catch(e){msg.textContent='بيانات الدخول غير صحيحة';msg.className='alert bad'}}
-async function logout(){await fetch('/api/auth/logout',{method:'POST'});location.reload()}
-async function refresh(){var d=await api('/api/admin/dashboard');active.textContent=d.members.active;todayRed.textContent=d.redemptions.today;revenue.textContent=d.revenue30d.toLocaleString()+' د.ل';attach.textContent=d.foodAttachRate30d+'%';extra.textContent=d.additionalSpend30d.toLocaleString()+' د.ل';payments.textContent=d.payments30d;await members()}
-async function members(){var arr=await api('/api/admin/members?search='+encodeURIComponent(search.value||''));tbody.innerHTML=arr.map(function(x){var st=x.status==='active'&&x.ends_at&&new Date(x.ends_at)<new Date()?'expired':x.status;return '<tr><td><b>'+esc(x.first_name+' '+x.last_name)+'</b><br><span class="small muted">'+esc(x.membership_number)+'</span></td><td>'+esc(x.phone)+'</td><td><span class="pill '+st+'">'+st+'</span></td><td>'+(x.ends_at?new Date(x.ends_at).toLocaleDateString('en-GB'):'—')+'</td><td>'+x.redemptions+'</td><td>'+Number(x.additional_spend||0).toLocaleString()+' د.ل</td></tr>'}).join('')||'<tr><td colspan="6" class="muted">لا توجد نتائج</td></tr>'}
-function esc(s){return String(s||'').replace(/[&<>"']/g,function(c){return{'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]})}
+}catch(e){el('loginBox').classList.remove('hidden');alertAt('loginMsg','تعذر الاتصال بالنظام: '+e.message)}
+}
+function showSetupResult(){
+const p=new URLSearchParams(location.search);const msg=el('setupMsg');
+if(p.get('created')==='1'){msg.textContent='تم إنشاء الحساب. جاري فتح تسجيل الدخول...';msg.className='alert ok';setTimeout(()=>location.replace('/admin'),700)}
+const e=p.get('error');
+if(e){msg.textContent=e==='invalid_password'?'كلمة المرور غير صالحة.':e==='invalid_email'?'البريد الإلكتروني غير صالح.':e==='invalid_name'?'الاسم غير صالح.':e==='already_configured'?'حساب الإدارة موجود بالفعل.':'تعذر إنشاء الحساب.';msg.className='alert bad'}
+}
+async function login(){
+const button=el('loginBtn');
+const email=el('email').value.trim();
+const password=el('password').value;
+button.disabled=true;button.textContent='جاري التحقق...';
+try{
+await api('/api/auth/login',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({email,password})});
+el('loginMsg').className='alert';
+el('loginBox').classList.add('hidden');
+el('appBox').classList.remove('hidden');
+el('logoutBtn').classList.remove('hidden');
+await refresh();
+}catch(e){alertAt('loginMsg',e.message==='invalid_credentials'?'البريد أو كلمة المرور غير صحيحة.':'حدث خطأ: '+e.message)}
+finally{button.disabled=false;button.textContent='دخول'}
+}
+async function logout(){await fetch('/api/auth/logout',{method:'POST',credentials:'same-origin'});location.reload()}
+async function refresh(){
+try{
+const d=await api('/api/admin/dashboard');
+el('active').textContent=d.members.active;
+el('todayRed').textContent=d.redemptions.today;
+el('revenue').textContent=d.revenue30d.toLocaleString()+' د.ل';
+el('attach').textContent=d.foodAttachRate30d+'%';
+el('extra').textContent=d.additionalSpend30d.toLocaleString()+' د.ل';
+el('payments').textContent=d.payments30d;
+await members();
+}catch(e){alertAt('dashboardMsg','تعذر تحميل لوحة الإدارة: '+e.message)}
+}
+async function members(){
+const arr=await api('/api/admin/members?search='+encodeURIComponent(el('search').value||''));
+el('tbody').innerHTML=arr.map(x=>{const st=x.status==='active'&&x.ends_at&&new Date(x.ends_at)<new Date()?'expired':x.status;return '<tr><td><b>'+esc(x.first_name+' '+x.last_name)+'</b><br><span class="small muted">'+esc(x.membership_number)+'</span></td><td>'+esc(x.phone)+'</td><td><span class="pill '+st+'">'+st+'</span></td><td>'+(x.ends_at?new Date(x.ends_at).toLocaleDateString('en-GB'):'—')+'</td><td>'+x.redemptions+'</td><td>'+Number(x.additional_spend||0).toLocaleString()+' د.ل</td></tr>'}).join('')||'<tr><td colspan="6" class="muted">لا توجد نتائج</td></tr>'
+}
+function esc(s){return String(s||'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}
 showSetupResult();boot();
 </script></body></html>
