@@ -1,6 +1,6 @@
 <!doctype html><html lang="ar" dir="rtl"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Morning Club Admin</title><link rel="stylesheet" href="/styles.css"></head><body><main class="wrap"><div class="topbar"><div><div class="brand">dipndip</div><div class="subbrand">Morning Club · Dashboard</div></div><div class="row"><a class="btn light" href="/staff">شاشة الكاشير</a><button id="logoutBtn" class="light hidden" onclick="logout()">خروج</button></div></div>
 
-<section id="setupBox" class="card hidden"><h2>تهيئة الإدارة لأول مرة</h2><p class="muted">أنشئ حساب الإدارة الرئيسي. هذه الشاشة تختفي نهائيًا بعد إنشاء أول حساب.</p><div class="grid"><div><label>الاسم</label><input id="setupName" value="dipndip Morning Club Admin"></div><div><label>البريد الإلكتروني</label><input id="setupEmail" type="email" value="morningclub@dipndip.ly"></div><div><label>كلمة مرور قوية</label><input id="setupPassword" type="password" minlength="10"></div><button onclick="setup()">إنشاء حساب الإدارة</button><div id="setupMsg" class="alert"></div></div></section>
+<section id="setupBox" class="card hidden"><h2>تهيئة الإدارة لأول مرة</h2><p class="muted">أنشئ حساب الإدارة الرئيسي. يمكنك استخدام أي بريد صحيح مثل social@dipndip.ly. هذه الشاشة تختفي بعد إنشاء أول حساب.</p><form method="post" action="/setup-admin" class="grid"><div><label>الاسم</label><input name="name" value="dipndip Morning Club Admin" required minlength="2"></div><div><label>البريد الإلكتروني</label><input name="email" type="email" value="social@dipndip.ly" required></div><div><label>كلمة مرور قوية</label><input name="password" type="password" minlength="10" required autocomplete="new-password"></div><button type="submit">إنشاء حساب الإدارة</button><div id="setupMsg" class="alert"></div></form></section>
 
 <section id="loginBox" class="card hidden"><h2>دخول الإدارة</h2><div class="g2 grid"><div><label>البريد</label><input id="email" type="email"></div><div><label>كلمة المرور</label><input id="password" type="password"></div></div><button style="margin-top:14px" onclick="login()">دخول</button><div id="loginMsg" class="alert"></div></section>
 
@@ -9,31 +9,17 @@
 <script>
 async function api(u,o){var r=await fetch(u,o);var d=await r.json().catch(function(){return{}});if(!r.ok)throw new Error(d.error||'خطأ');return d}
 async function boot(){try{var s=await api('/api/setup/status');if(!s.configured){setupBox.classList.remove('hidden');return}try{await api('/api/auth/me');appBox.classList.remove('hidden');logoutBtn.classList.remove('hidden');await refresh()}catch(e){loginBox.classList.remove('hidden')}}catch(e){loginBox.classList.remove('hidden')}}
-async function setup(){
+function showSetupResult(){
+  var p=new URLSearchParams(location.search);
   var msg=document.getElementById('setupMsg');
-  var name=document.getElementById('setupName').value.trim();
-  var emailValue=document.getElementById('setupEmail').value.trim();
-  var passwordValue=document.getElementById('setupPassword').value;
-  msg.className='alert';
-  if(!name || !emailValue || passwordValue.length<10){
-    msg.textContent='تحقق من الاسم والبريد وكلمة المرور (10 أحرف على الأقل).';
-    msg.className='alert bad';
-    return;
-  }
-  try{
-    await api('/api/setup',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({name:name,email:emailValue,password:passwordValue})});
-    msg.textContent='تم إنشاء حساب الإدارة. يمكنك تسجيل الدخول الآن.';
-    msg.className='alert ok';
-    setTimeout(function(){location.reload()},900);
-  }catch(e){
-    msg.textContent=e.message==='already_configured'?'تم إنشاء حساب الإدارة مسبقًا. أعد تحميل الصفحة وسجّل الدخول.':e.message;
-    msg.className='alert bad';
-  }
+  if(p.get('created')==='1'){msg.textContent='تم إنشاء الحساب. جاري فتح شاشة تسجيل الدخول...';msg.className='alert ok';setTimeout(function(){location.href='/admin'},700)}
+  var e=p.get('error');
+  if(e){msg.textContent=e==='invalid_setup_data'?'تحقق من البريد وكلمة المرور (10 أحرف على الأقل).':e==='already_configured'?'تم إنشاء حساب الإدارة مسبقًا.':'تعذر إنشاء الحساب، حاول مرة أخرى.';msg.className='alert bad'}
 }
 async function login(){var em=document.getElementById('email').value.trim();var pw=document.getElementById('password').value;var msg=document.getElementById('loginMsg');try{await api('/api/auth/login',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({email:em,password:pw})});location.reload()}catch(e){msg.textContent='بيانات الدخول غير صحيحة';msg.className='alert bad'}}
 async function logout(){await fetch('/api/auth/logout',{method:'POST'});location.reload()}
 async function refresh(){var d=await api('/api/admin/dashboard');active.textContent=d.members.active;todayRed.textContent=d.redemptions.today;revenue.textContent=d.revenue30d.toLocaleString()+' د.ل';attach.textContent=d.foodAttachRate30d+'%';extra.textContent=d.additionalSpend30d.toLocaleString()+' د.ل';payments.textContent=d.payments30d;await members()}
 async function members(){var arr=await api('/api/admin/members?search='+encodeURIComponent(search.value||''));tbody.innerHTML=arr.map(function(x){var st=x.status==='active'&&x.ends_at&&new Date(x.ends_at)<new Date()?'expired':x.status;return '<tr><td><b>'+esc(x.first_name+' '+x.last_name)+'</b><br><span class="small muted">'+esc(x.membership_number)+'</span></td><td>'+esc(x.phone)+'</td><td><span class="pill '+st+'">'+st+'</span></td><td>'+(x.ends_at?new Date(x.ends_at).toLocaleDateString('en-GB'):'—')+'</td><td>'+x.redemptions+'</td><td>'+Number(x.additional_spend||0).toLocaleString()+' د.ل</td></tr>'}).join('')||'<tr><td colspan="6" class="muted">لا توجد نتائج</td></tr>'}
 function esc(s){return String(s||'').replace(/[&<>"']/g,function(c){return{'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]})}
-boot();
+showSetupResult();boot();
 </script></body></html>
