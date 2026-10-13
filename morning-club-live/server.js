@@ -19,15 +19,11 @@ const PRICE = Number(process.env.MEMBERSHIP_PRICE_LYD || 99);
 const DAYS = Number(process.env.MEMBERSHIP_DAYS || 30);
 const MORNING_START = process.env.MORNING_START || '08:00';
 const MORNING_END = process.env.MORNING_END || '10:00';
-const JWT_SECRET = process.env.JWT_SECRET || 'dev-only-change-me';
+let JWT_SECRET = process.env.JWT_SECRET || null;
 const APP_BASE_URL = String(process.env.APP_BASE_URL || '').replace(/\/$/, '');
 
 if (!process.env.DATABASE_URL) {
   console.error('DATABASE_URL is required');
-  process.exit(1);
-}
-if (process.env.NODE_ENV === 'production' && JWT_SECRET === 'dev-only-change-me') {
-  console.error('JWT_SECRET must be set in production');
   process.exit(1);
 }
 
@@ -83,6 +79,18 @@ async function initDb() {
   await db("CREATE TABLE IF NOT EXISTS membership_payments (id uuid PRIMARY KEY DEFAULT gen_random_uuid(), membership_id uuid NOT NULL REFERENCES memberships(id) ON DELETE CASCADE, type text NOT NULL CHECK (type IN ('activation','renewal')), amount_lyd numeric(10,3) NOT NULL, payment_method text NOT NULL DEFAULT 'cash', branch_code text, receipt_number text, staff_id uuid REFERENCES staff(id) ON DELETE SET NULL, paid_at timestamptz NOT NULL DEFAULT now())");
   await db("CREATE TABLE IF NOT EXISTS redemptions (id uuid PRIMARY KEY DEFAULT gen_random_uuid(), membership_id uuid NOT NULL REFERENCES memberships(id) ON DELETE CASCADE, benefit_date date NOT NULL, redeemed_at timestamptz NOT NULL DEFAULT now(), branch_code text NOT NULL, staff_id uuid REFERENCES staff(id) ON DELETE SET NULL, receipt_number text, spend_amount numeric(10,3) NOT NULL DEFAULT 0, UNIQUE(membership_id, benefit_date))");
   await db("CREATE TABLE IF NOT EXISTS audit_log (id bigserial PRIMARY KEY, staff_id uuid REFERENCES staff(id) ON DELETE SET NULL, action text NOT NULL, membership_id uuid REFERENCES memberships(id) ON DELETE SET NULL, payload jsonb, created_at timestamptz NOT NULL DEFAULT now())");
+  await db("CREATE TABLE IF NOT EXISTS app_config (key text PRIMARY KEY, value text NOT NULL, updated_at timestamptz NOT NULL DEFAULT now())");
+
+  if (!JWT_SECRET) {
+    var secretRow = (await db("SELECT value FROM app_config WHERE key='jwt_secret'")).rows[0];
+    if (!secretRow) {
+      var generatedSecret = randomToken() + randomToken();
+      await db("INSERT INTO app_config(key,value) VALUES('jwt_secret',$1)", [generatedSecret]);
+      JWT_SECRET = generatedSecret;
+    } else {
+      JWT_SECRET = secretRow.value;
+    }
+  }
 
   var email = String(process.env.ADMIN_EMAIL || '').trim().toLowerCase();
   var password = String(process.env.ADMIN_PASSWORD || '');
@@ -195,6 +203,23 @@ app.get('/api/qr/:token.png',async function(req,res){
     var b=await QRCode.toBuffer('MC:'+m.qr_token,{type:'png',width:420,margin:2,color:{dark:'#211914',light:'#ffffff'}});
     res.type('png').send(b);
   } catch(e){res.status(500).end();}
+});
+
+app.get('/api/setup/status',async function(req,res){
+  var r=await db("SELECT COUNT(*)::int count FROM staff");
+  res.json({configured:Number(r.rows[0].count)>0});
+});
+
+app.post('/api/setup',rateLimit({windowMs:600000,limit:10}),async function(req,res){
+  var count=Number((await db("SELECT COUNT(*)::int count FROM staff")).rows[0].count);
+  if(count>0) return res.status(409).json({error:'already_configured'});
+  var name=String(req.body.name||'').trim();
+  var email=String(req.body.email||'').trim().toLowerCase();
+  var password=String(req.body.password||'');
+  if(name.length<2 || email.indexOf('@')<1 || password.length<10) return res.status(400).json({error:'invalid_setup_data'});
+  var hash=await bcrypt.hash(password,12);
+  await db("INSERT INTO staff(name,email,password_hash,role) VALUES($1,$2,$3,'super_admin')",[name,email,hash]);
+  res.status(201).json({ok:true});
 });
 
 app.post('/api/auth/login',rateLimit({windowMs:600000,limit:20}),async function(req,res){
