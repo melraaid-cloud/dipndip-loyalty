@@ -250,7 +250,9 @@ app.post('/setup-admin',rateLimit({windowMs:600000,limit:10}),async function(req
     var email=String(req.body.email||'').trim().toLowerCase();
     var password=String(req.body.password||'');
     if(name.length<2 || email.indexOf('@')<1 || password.length<10) {
-      return res.redirect(303,'/admin?error=invalid_setup_data');
+      var field = name.length<2 ? 'name' : (email.indexOf('@')<1 ? 'email' : 'password');
+      console.warn('ADMIN SETUP VALIDATION FAILED: field='+field+'; password_length='+password.length+'; body_fields='+Object.keys(req.body||{}).join(','));
+      return res.redirect(303,'/admin?error=invalid_'+field);
     }
     var hash=await bcrypt.hash(password,12);
     await db("INSERT INTO staff(name,email,password_hash,role) VALUES($1,$2,$3,'super_admin')",[name,email,hash]);
