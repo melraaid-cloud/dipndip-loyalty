@@ -288,6 +288,22 @@ app.post('/api/setup',rateLimit({windowMs:600000,limit:10}),async function(req,r
   }
 });
 
+app.post('/login-admin',rateLimit({windowMs:600000,limit:20}),async function(req,res){
+  try {
+    var email=String(req.body.email||'').trim().toLowerCase();
+    var password=String(req.body.password||'');
+    if(!email || !password) return res.redirect(303,'/admin?login_error=missing_fields');
+    var row=(await db("SELECT * FROM staff WHERE email=$1 AND active=true",[email])).rows[0];
+    if(!row || !(await bcrypt.compare(password,row.password_hash))) return res.redirect(303,'/admin?login_error=invalid_credentials');
+    await db("UPDATE staff SET last_login_at=now() WHERE id=$1",[row.id]);
+    res.cookie('mc_token',signStaff(row),{httpOnly:true,secure:process.env.NODE_ENV==='production',sameSite:'lax',path:'/',maxAge:43200000});
+    return res.redirect(303,'/admin');
+  } catch(e) {
+    console.error('ADMIN LOGIN ERROR:',e.message);
+    return res.redirect(303,'/admin?login_error=server_error');
+  }
+});
+
 app.post('/api/auth/login',rateLimit({windowMs:600000,limit:20}),async function(req,res){
   var email=String(req.body.email||'').trim().toLowerCase();
   var password=String(req.body.password||'');
