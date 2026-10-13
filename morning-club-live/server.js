@@ -155,6 +155,43 @@ async function audit(staffId,action,memberId,payload) {
   try { await db("INSERT INTO audit_log(staff_id,action,membership_id,payload) VALUES($1,$2,$3,$4)",[staffId||null,action,memberId||null,JSON.stringify(payload||{})]); } catch(e){}
 }
 
+async function runStartupSelfTest() {
+  var client = await pool.connect();
+  try {
+    await client.query('BEGIN');
+    var suffix = crypto.randomBytes(4).toString('hex');
+    var phone = '+218SELFTEST' + suffix;
+    var customer = (await client.query(
+      "INSERT INTO customers(first_name,last_name,phone) VALUES('System','SelfTest',$1) RETURNING id",
+      [phone]
+    )).rows[0];
+    var member = (await client.query(
+      "INSERT INTO memberships(customer_id,membership_number,qr_token,status,starts_at,ends_at,price_lyd) VALUES($1,$2,$3,'active',now(),now()+interval '30 days',$4) RETURNING id",
+      [customer.id,'TEST'+suffix,'tok_'+suffix,PRICE]
+    )).rows[0];
+    var first = await client.query(
+      "INSERT INTO redemptions(membership_id,benefit_date,branch_code,spend_amount) VALUES($1,$2,'selftest',12.5) ON CONFLICT(membership_id,benefit_date) DO NOTHING RETURNING id",
+      [member.id,todayLocal()]
+    );
+    var second = await client.query(
+      "INSERT INTO redemptions(membership_id,benefit_date,branch_code,spend_amount) VALUES($1,$2,'selftest',0) ON CONFLICT(membership_id,benefit_date) DO NOTHING RETURNING id",
+      [member.id,todayLocal()]
+    );
+    if (first.rowCount !== 1 || second.rowCount !== 0) throw new Error('daily uniqueness check failed');
+    var t0830 = DateTime.fromISO('2026-01-01T08:30:00',{zone:TZ});
+    var t1000 = DateTime.fromISO('2026-01-01T10:00:00',{zone:TZ});
+    if (!inWindow(t0830) || inWindow(t1000)) throw new Error('time-window rule failed');
+    await client.query('ROLLBACK');
+    console.log('SELFTEST PASS: database, 30-day membership, one-per-day redemption and 08:00–10:00 rule');
+  } catch (e) {
+    try { await client.query('ROLLBACK'); } catch (_) {}
+    console.error('SELFTEST FAIL:', e.message);
+    throw e;
+  } finally {
+    client.release();
+  }
+}
+
 app.get('/health',async function(req,res){
   try { await db('SELECT 1'); res.json({status:'ok',service:'dipndip-morning-club',time:new Date().toISOString()}); }
   catch(e){ res.status(503).json({status:'error'}); }
@@ -354,6 +391,6 @@ app.get('/admin',function(req,res){res.sendFile(path.join(__dirname,'public','ad
 
 app.use(function(err,req,res,next){console.error(err);res.status(500).json({error:'server_error'});});
 
-initDb().then(function(){
+initDb().then(runStartupSelfTest).then(function(){
   app.listen(PORT,function(){console.log('dipndip Morning Club live on :'+PORT+' | '+TZ+' | '+PRICE+' LYD / '+DAYS+' days');});
 }).catch(function(e){console.error('Startup failed',e);process.exit(1);});
