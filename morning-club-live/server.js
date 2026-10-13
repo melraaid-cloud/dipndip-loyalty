@@ -248,15 +248,21 @@ app.get('/api/setup/status',async function(req,res){
 });
 
 app.post('/api/setup',rateLimit({windowMs:600000,limit:10}),async function(req,res){
-  var count=Number((await db("SELECT COUNT(*)::int count FROM staff")).rows[0].count);
-  if(count>0) return res.status(409).json({error:'already_configured'});
-  var name=String(req.body.name||'').trim();
-  var email=String(req.body.email||'').trim().toLowerCase();
-  var password=String(req.body.password||'');
-  if(name.length<2 || email.indexOf('@')<1 || password.length<10) return res.status(400).json({error:'invalid_setup_data'});
-  var hash=await bcrypt.hash(password,12);
-  await db("INSERT INTO staff(name,email,password_hash,role) VALUES($1,$2,$3,'super_admin')",[name,email,hash]);
-  res.status(201).json({ok:true});
+  try {
+    var count=Number((await db("SELECT COUNT(*)::int count FROM staff")).rows[0].count);
+    if(count>0) return res.status(409).json({error:'already_configured',message:'The initial admin has already been created.'});
+    var name=String(req.body.name||'').trim();
+    var email=String(req.body.email||'').trim().toLowerCase();
+    var password=String(req.body.password||'');
+    if(name.length<2 || email.indexOf('@')<1 || password.length<10) return res.status(400).json({error:'invalid_setup_data',message:'Enter a valid name, email and password of at least 10 characters.'});
+    var hash=await bcrypt.hash(password,12);
+    await db("INSERT INTO staff(name,email,password_hash,role) VALUES($1,$2,$3,'super_admin')",[name,email,hash]);
+    console.log('ADMIN SETUP CREATED: '+email);
+    res.status(201).json({ok:true});
+  } catch(e) {
+    console.error('ADMIN SETUP ERROR:', e.message);
+    res.status(500).json({error:'setup_failed',message:'Account setup failed. Please try again.'});
+  }
 });
 
 app.post('/api/auth/login',rateLimit({windowMs:600000,limit:20}),async function(req,res){
@@ -391,6 +397,8 @@ app.get('/admin',function(req,res){res.sendFile(path.join(__dirname,'public','ad
 
 app.use(function(err,req,res,next){console.error(err);res.status(500).json({error:'server_error'});});
 
-initDb().then(runStartupSelfTest).then(function(){
+initDb().then(runStartupSelfTest).then(async function(){
+  var staffCount = Number((await db("SELECT COUNT(*)::int count FROM staff")).rows[0].count);
+  console.log('SETUP STATUS: '+(staffCount>0?'configured':'not-configured')+' | staff='+staffCount);
   app.listen(PORT,function(){console.log('dipndip Morning Club live on :'+PORT+' | '+TZ+' | '+PRICE+' LYD / '+DAYS+' days');});
 }).catch(function(e){console.error('Startup failed',e);process.exit(1);});
