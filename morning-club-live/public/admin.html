@@ -14,7 +14,7 @@ function showSetupResult(){
   var msg=document.getElementById('setupMsg');
   if(p.get('created')==='1'){msg.textContent='تم إنشاء الحساب. جاري فتح شاشة تسجيل الدخول...';msg.className='alert ok';setTimeout(function(){location.href='/admin'},700)}
   var e=p.get('error');
-  if(e){msg.textContent=e==='invalid_setup_data'?'تحقق من البريد وكلمة المرور (10 أحرف على الأقل).':e==='already_configured'?'تم إنشاء حساب الإدارة مسبقًا.':'تعذر إنشاء الحساب، حاول مرة أخرى.';msg.className='alert bad'}
+  if(e){msg.textContent=e==='invalid_password'?'السيرفر استلم كلمة مرور أقصر من 10 أحرف أو لم يستلمها. اكتبها يدويًا داخل الحقل ثم أعد المحاولة.':e==='invalid_email'?'البريد الإلكتروني غير صالح.':e==='invalid_name'?'الاسم غير صالح.':e==='invalid_setup_data'?'تحقق من بيانات الحساب.':e==='already_configured'?'تم إنشاء حساب الإدارة مسبقًا.':'تعذر إنشاء الحساب، حاول مرة أخرى.';msg.className='alert bad'}
 }
 async function login(){var em=document.getElementById('email').value.trim();var pw=document.getElementById('password').value;var msg=document.getElementById('loginMsg');try{await api('/api/auth/login',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({email:em,password:pw})});location.reload()}catch(e){msg.textContent='بيانات الدخول غير صحيحة';msg.className='alert bad'}}
 async function logout(){await fetch('/api/auth/logout',{method:'POST'});location.reload()}
