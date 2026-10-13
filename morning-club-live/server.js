@@ -242,6 +242,26 @@ app.get('/api/qr/:token.png',async function(req,res){
   } catch(e){res.status(500).end();}
 });
 
+app.post('/setup-admin',rateLimit({windowMs:600000,limit:10}),async function(req,res){
+  try {
+    var count=Number((await db("SELECT COUNT(*)::int count FROM staff")).rows[0].count);
+    if(count>0) return res.redirect(303,'/admin?error=already_configured');
+    var name=String(req.body.name||'').trim();
+    var email=String(req.body.email||'').trim().toLowerCase();
+    var password=String(req.body.password||'');
+    if(name.length<2 || email.indexOf('@')<1 || password.length<10) {
+      return res.redirect(303,'/admin?error=invalid_setup_data');
+    }
+    var hash=await bcrypt.hash(password,12);
+    await db("INSERT INTO staff(name,email,password_hash,role) VALUES($1,$2,$3,'super_admin')",[name,email,hash]);
+    console.log('ADMIN SETUP CREATED: '+email);
+    return res.redirect(303,'/admin?created=1');
+  } catch(e) {
+    console.error('ADMIN FORM SETUP ERROR:',e.message);
+    return res.redirect(303,'/admin?error=setup_failed');
+  }
+});
+
 app.get('/api/setup/status',async function(req,res){
   var r=await db("SELECT COUNT(*)::int count FROM staff");
   res.json({configured:Number(r.rows[0].count)>0});
